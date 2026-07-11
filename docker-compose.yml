@@ -1,0 +1,46 @@
+services:
+  mongo:
+    image: mongo:8
+    container_name: mini-spatial-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: mini-spatial-backend
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        required: false
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: mini-spatial-frontend
+    restart: unless-stopped
+    env_file:
+      - path: ./frontend/.env
+        required: false
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo-data:
