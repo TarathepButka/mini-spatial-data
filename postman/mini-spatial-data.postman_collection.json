@@ -1,0 +1,89 @@
+{
+  "info": {
+    "name": "Mini Spatial Data Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "featureId", "value": "replace-with-created-feature-id" },
+    { "key": "googleCredential", "value": "paste-google-id-token-here" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Google Login - Sets HttpOnly Cookie",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/google",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"credential\": \"{{googleCredential}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Current User - Uses Cookie",
+      "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
+    },
+    {
+      "name": "Logout - Clears Cookie",
+      "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" }
+    },
+    {
+      "name": "List Features",
+      "request": { "method": "GET", "url": "{{baseUrl}}/features?page=1&limit=20" }
+    },
+    {
+      "name": "List Features with Search and Filters",
+      "request": { "method": "GET", "url": "{{baseUrl}}/features?page=1&limit=20&search=hotspot&category=nominal&province=Suphan%20Buri" }
+    },
+    {
+      "name": "List Features by BBox",
+      "request": { "method": "GET", "url": "{{baseUrl}}/features?page=1&limit=20&bbox=99.5,13.0,101.5,16.0" }
+    },
+    {
+      "name": "Get Feature",
+      "request": { "method": "GET", "url": "{{baseUrl}}/features/{{featureId}}" }
+    },
+    {
+      "name": "Create Feature - Uses Cookie when AUTH_REQUIRED=true",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/features",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Manual Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Created from Postman\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Update Feature - Uses Cookie when AUTH_REQUIRED=true",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/features/{{featureId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Updated Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Updated from Postman\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Delete Feature - Uses Cookie when AUTH_REQUIRED=true",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/features/{{featureId}}" }
+    },
+    {
+      "name": "Nearby Features",
+      "request": { "method": "GET", "url": "{{baseUrl}}/features/nearby?lng=100.5018&lat=13.7563&radius=5000" }
+    },
+    {
+      "name": "Seed Vallaris Thailand - Uses Cookie when AUTH_REQUIRED=true",
+      "request": { "method": "POST", "url": "{{baseUrl}}/seed/vallaris" }
+    }
+  ]
+}
