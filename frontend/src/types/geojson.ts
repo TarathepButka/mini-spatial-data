@@ -1,7 +1,21 @@
-﻿export type PointGeometry = {
+export type Position = [number, number];
+
+export type PointGeometry = {
   type: "Point";
-  coordinates: [number, number];
+  coordinates: Position;
 };
+
+export type LineStringGeometry = {
+  type: "LineString";
+  coordinates: Position[];
+};
+
+export type PolygonGeometry = {
+  type: "Polygon";
+  coordinates: Position[][];
+};
+
+export type SpatialGeometry = PointGeometry | LineStringGeometry | PolygonGeometry;
 
 export type FeatureProperties = {
   name: string;
@@ -29,7 +43,7 @@ export type FeatureProperties = {
 export type SpatialFeature = {
   id: string;
   type: "Feature";
-  geometry: PointGeometry;
+  geometry: SpatialGeometry;
   properties: FeatureProperties;
 };
 
@@ -52,7 +66,7 @@ export type FeaturesResponse = {
 
 export type FeatureInput = {
   type: "Feature";
-  geometry: PointGeometry;
+  geometry: SpatialGeometry;
   properties: FeatureProperties;
 };
 
