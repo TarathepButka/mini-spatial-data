@@ -1,5 +1,6 @@
 import { Database, MapPinned, Plus } from "lucide-react";
 
+import { Button } from "../../components/ui/Button";
 import type { BoundingBox, SpatialFeature } from "../../types/geojson";
 import { CategoryFilterDropdown } from "./CategoryFilterDropdown";
 import { ProvinceFilterDropdown } from "./ProvinceFilterDropdown";
@@ -70,26 +71,21 @@ export function Toolbar({
         Viewport
       </label>
 
-      <button
-        type="button"
+      <Button
         title="Seed Vallaris Thailand data"
         onClick={onSeed}
         disabled={seedLoading}
-        className="inline-flex h-10 items-center gap-2 rounded border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
+        variant="secondary"
+        className="px-3"
       >
         <Database size={17} />
         {seedLoading ? "Seeding" : "Seed"}
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        title="Add feature"
-        onClick={onAdd}
-        className="inline-flex h-10 items-center gap-2 rounded bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-      >
+      <Button title="Add feature" onClick={onAdd} variant="primary">
         <Plus size={18} />
         Add
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, LocateFixed, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, LocateFixed, Pencil, Trash2 } from "lucide-react";
+import { useMemo } from "react";
+import { DropdownMenu, DropdownMenuItem, DropdownTriggerButton } from "../../components/ui/DropdownMenu";
+import { IconButton } from "../../components/ui/IconButton";
 import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
 import { geometrySummary } from "./geometry";
 import { SummaryChips } from "./SummaryChips";
@@ -186,97 +188,32 @@ export function FeaturesTable({
 }
 
 function PageSizeDropdown({ value, options, onChange }: { value: number; options: number[]; onChange: (value: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  function selectPageSize(nextValue: number) {
+  function selectPageSize(nextValue: number, close: () => void) {
     onChange(nextValue);
-    setOpen(false);
+    close();
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        title="Rows per page"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-9 min-w-32 items-center justify-between gap-2 rounded border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-400"
-      >
-        <span>{value} per page</span>
-        <ChevronDown size={16} className={`shrink-0 transition ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open ? (
-        <div
-          role="menu"
-          className="absolute bottom-full left-0 z-30 mb-2 w-40 rounded border border-zinc-200 bg-white p-2 text-sm text-zinc-700 shadow-lg"
-        >
-          {options.map((option) => {
+    <DropdownMenu
+      menuClassName="absolute bottom-full left-0 z-30 mb-2 w-40 rounded border border-zinc-200 bg-white p-2 text-sm text-zinc-700 shadow-lg"
+      renderTrigger={({ open, toggle }) => (
+        <DropdownTriggerButton open={open} title="Rows per page" size="sm" onClick={toggle}>
+          {value} per page
+        </DropdownTriggerButton>
+      )}
+    >
+      {({ close }) =>
+        options.map((option) => {
           const active = option === value;
           return (
-            <button
-              key={option}
-              type="button"
-              role="menuitemradio"
-              aria-checked={active}
-              onClick={() => selectPageSize(option)}
-              className="flex h-9 w-full items-center justify-between rounded px-2 text-left transition hover:bg-zinc-100"
-            >
+            <DropdownMenuItem key={option} role="menuitemradio" aria-checked={active} onClick={() => selectPageSize(option, close)}>
               <span>{option} per page</span>
               {active ? <Check size={16} className="shrink-0 text-zinc-950" /> : null}
-            </button>
+            </DropdownMenuItem>
           );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function IconButton({
-  title,
-  onClick,
-  children,
-  variant = "ghost",
-}: {
-  title: string;
-  onClick: React.MouseEventHandler<HTMLButtonElement>;
-  children: React.ReactNode;
-  variant?: "ghost" | "danger";
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className={`rounded p-2 transition ${variant === "danger" ? "text-red-600 hover:bg-red-50" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"}`}
-    >
-      {children}
-    </button>
+        })
+      }
+    </DropdownMenu>
   );
 }
 

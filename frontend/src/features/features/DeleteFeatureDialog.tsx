@@ -1,5 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, LoaderCircle, X } from "lucide-react";
+import { Button } from "../../components/ui/Button";
+import { IconButton } from "../../components/ui/IconButton";
 import type { SpatialFeature } from "../../types/geojson";
 import { geometrySummary } from "./geometry";
 import { featureCategory } from "./styles";
@@ -31,14 +33,9 @@ export function DeleteFeatureDialog({ open, feature, deleting, onOpenChange, onC
               </div>
             </div>
             <Dialog.Close asChild>
-              <button
-                type="button"
-                title="Close"
-                disabled={deleting}
-                className="rounded p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              <IconButton title="Close" disabled={deleting}>
                 <X size={18} />
-              </button>
+              </IconButton>
             </Dialog.Close>
           </div>
 
@@ -56,23 +53,14 @@ export function DeleteFeatureDialog({ open, feature, deleting, onOpenChange, onC
 
           <div className="flex items-center justify-end gap-2 border-t border-zinc-200 px-5 py-4">
             <Dialog.Close asChild>
-              <button
-                type="button"
-                disabled={deleting}
-                className="inline-flex h-10 items-center justify-center rounded border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              <Button disabled={deleting} variant="secondary">
                 Cancel
-              </button>
+              </Button>
             </Dialog.Close>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={!feature || deleting}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <Button onClick={onConfirm} disabled={!feature || deleting} variant="danger">
               {deleting ? <LoaderCircle size={17} className="animate-spin" /> : null}
               {deleting ? "Deleting" : "Delete"}
-            </button>
+            </Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

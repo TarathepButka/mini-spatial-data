@@ -1,6 +1,7 @@
 import { LogOut, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import type { AuthUser } from "../../api/auth";
+import { DropdownMenu } from "../../components/ui/DropdownMenu";
 
 type UserMenuProps = {
   user: AuthUser;
@@ -8,59 +9,36 @@ type UserMenuProps = {
 };
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const displayName = user.name || user.email;
   const role = user.role?.trim() || "";
   const initials = useMemo(() => initialsFrom(displayName), [displayName]);
 
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  function handleLogout() {
-    setOpen(false);
+  function handleLogout(close: () => void) {
+    close();
     onLogout();
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        title="User menu"
-        aria-label="User menu"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className={`inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-zinc-300 ${
-          open ? "border-zinc-300 shadow-sm" : "border-transparent hover:border-zinc-300 hover:shadow-sm"
-        }`}
-      >
-        <Avatar picture={user.picture} name={displayName} initials={initials} sizeClassName="h-8 w-8" />
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 z-40 mt-2 w-72 overflow-hidden rounded border border-zinc-200 bg-white text-sm text-zinc-700 shadow-lg"
+    <DropdownMenu
+      menuClassName="absolute right-0 z-40 mt-2 w-72 overflow-hidden rounded border border-zinc-200 bg-white text-sm text-zinc-700 shadow-lg"
+      renderTrigger={({ open, toggle }) => (
+        <button
+          type="button"
+          title="User menu"
+          aria-label="User menu"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={toggle}
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-full border bg-white text-zinc-700 transition focus:outline-none focus:ring-2 focus:ring-zinc-300 ${
+            open ? "border-zinc-300 shadow-sm" : "border-transparent hover:border-zinc-300 hover:shadow-sm"
+          }`}
         >
+          <Avatar picture={user.picture} name={displayName} initials={initials} sizeClassName="h-8 w-8" />
+        </button>
+      )}
+    >
+      {({ close }) => (
+        <>
           <div className="flex items-center gap-3 border-b border-zinc-100 px-3 py-3">
             <Avatar picture={user.picture} name={displayName} initials={initials} sizeClassName="h-10 w-10" />
             <div className="min-w-0">
@@ -84,15 +62,15 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           <button
             type="button"
             role="menuitem"
-            onClick={handleLogout}
+            onClick={() => handleLogout(close)}
             className="flex h-11 w-full items-center gap-3 border-t border-zinc-100 px-4 text-left font-medium text-red-600 transition hover:bg-red-50"
           >
             <LogOut size={17} className="shrink-0" />
             Logout
           </button>
-        </div>
+        </>
       )}
-    </div>
+    </DropdownMenu>
   );
 }
 

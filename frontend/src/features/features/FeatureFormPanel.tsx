@@ -1,5 +1,8 @@
 import { LocateFixed, Save, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Button } from "../../components/ui/Button";
+import { FormField, textControlClassName, textareaControlClassName } from "../../components/ui/FormField";
+import { IconButton } from "../../components/ui/IconButton";
 import type { FeatureInput, SpatialFeature, SpatialGeometry } from "../../types/geojson";
 import { CATEGORY_OPTIONS, DEFAULT_CATEGORY, DEFAULT_COORDINATES, GEOMETRY_TYPE_OPTIONS } from "./constants";
 import { draftPointGeometry, geometrySummary, geometryTemplate, geometryToJson, parseGeometryInput } from "./geometry";
@@ -15,9 +18,6 @@ type FeatureFormPanelProps = {
   onGeometryChange: (geometry: SpatialGeometry) => void;
   onSubmit: (input: FeatureInput) => void;
 };
-
-const textControlClassName = "h-10 rounded border border-zinc-200 px-3 font-normal outline-none focus:border-zinc-400";
-const textareaControlClassName = "resize-none rounded border border-zinc-200 px-3 py-2 font-normal outline-none focus:border-zinc-400";
 
 export function FeatureFormPanel({
   open,
@@ -127,24 +127,22 @@ export function FeatureFormPanel({
             <h2 className="text-base font-semibold text-zinc-950">{mode === "edit" ? "Edit feature" : "Add feature"}</h2>
             <p className="text-xs text-zinc-500">{geometryStatus}</p>
           </div>
-          <button type="button" title="Close" onClick={onClose} className="rounded p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950">
+          <IconButton title="Close" onClick={onClose}>
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
-        <label className="grid gap-1 text-sm font-medium text-zinc-700">
-          Name
+        <FormField label="Name">
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
             className={textControlClassName}
           />
-        </label>
+        </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <label className="grid gap-1 text-sm font-medium text-zinc-700">
-            Category
+          <FormField label="Category">
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
@@ -156,20 +154,18 @@ export function FeatureFormPanel({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="grid gap-1 text-sm font-medium text-zinc-700">
-            Province
+          </FormField>
+          <FormField label="Province">
             <input
               value={province}
               onChange={(event) => setProvince(event.target.value)}
               className={textControlClassName}
             />
-          </label>
+          </FormField>
         </div>
 
         <div className="grid grid-cols-[1fr_auto] gap-3">
-          <label className="grid gap-1 text-sm font-medium text-zinc-700">
-            Geometry type
+          <FormField label="Geometry type">
             <select
               value={geometryType}
               onChange={(event) => changeGeometryType(event.target.value as SpatialGeometry["type"])}
@@ -181,7 +177,7 @@ export function FeatureFormPanel({
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
           <button
             type="button"
             title="Use point from map"
@@ -192,8 +188,7 @@ export function FeatureFormPanel({
           </button>
         </div>
 
-        <label className="grid gap-1 text-sm font-medium text-zinc-700">
-          Raw GeoJSON geometry
+        <FormField label="Raw GeoJSON geometry">
           <textarea
             value={rawGeometry}
             onChange={(event) => changeRawGeometry(event.target.value)}
@@ -201,27 +196,26 @@ export function FeatureFormPanel({
             spellCheck={false}
             className={`${textareaControlClassName} font-mono text-xs`}
           />
-        </label>
+        </FormField>
         {geometryError ? <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{geometryError}</div> : null}
 
-        <label className="grid gap-1 text-sm font-medium text-zinc-700">
-          Description
+        <FormField label="Description">
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
             className={textareaControlClassName}
           />
-        </label>
+        </FormField>
 
-        <button
+        <Button
           type="submit"
           disabled={!geometry || Boolean(geometryError) || saving || name.trim() === ""}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="primary"
         >
           <Save size={17} />
           {saving ? "Saving" : "Save"}
-        </button>
+        </Button>
       </form>
     </aside>
   );

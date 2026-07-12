@@ -1,5 +1,6 @@
 import { LogIn, MapPinned } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../../components/ui/Button";
 import { appConfig } from "../../config/runtime";
 import { useAuth } from "./AuthContext";
 
@@ -38,9 +39,35 @@ export function LoginScreen({ loading }: { loading: boolean }) {
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
+  const [buttonWidth, setButtonWidth] = useState(320);
 
   useEffect(() => {
-    if (!googleClientID) return;
+    if (!buttonRef.current) {
+      return;
+    }
+
+    const updateButtonWidth = () => {
+      if (!buttonRef.current) {
+        return;
+      }
+
+      const nextWidth = Math.floor(buttonRef.current.getBoundingClientRect().width);
+      setButtonWidth(Math.min(360, Math.max(200, nextWidth)));
+    };
+
+    updateButtonWidth();
+
+    const observer = new ResizeObserver(updateButtonWidth);
+    observer.observe(buttonRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!googleClientID) {
+      return;
+    }
+
     if (window.google?.accounts.id) {
       setScriptReady(true);
       return;
@@ -63,7 +90,10 @@ export function LoginScreen({ loading }: { loading: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!googleClientID || !scriptReady || !buttonRef.current || !window.google?.accounts.id) return;
+    if (!googleClientID || !scriptReady || !buttonRef.current || !window.google?.accounts.id) {
+      return;
+    }
+
     buttonRef.current.innerHTML = "";
     window.google.accounts.id.initialize({
       client_id: googleClientID,
@@ -83,43 +113,41 @@ export function LoginScreen({ loading }: { loading: boolean }) {
       size: "large",
       shape: "rectangular",
       text: "signin_with",
-      width: 320,
+      width: buttonWidth,
     });
-  }, [loginWithGoogle, scriptReady]);
+  }, [buttonWidth, loginWithGoogle, scriptReady]);
 
   return (
-    <main className="grid min-h-screen place-items-center bg-zinc-100 px-4 text-zinc-950">
-      <section className="w-full max-w-md rounded border border-zinc-200 bg-white p-6 shadow-xl">
-        <div className="mb-6 flex items-start gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded bg-zinc-950 text-white">
-            <MapPinned size={22} />
+    <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-10 text-zinc-950">
+      <section className="w-full max-w-[440px] rounded-md border border-zinc-200 bg-white px-6 py-7 shadow-xl sm:px-8 sm:py-8">
+        <div className="mx-auto grid w-full max-w-[360px] gap-6">
+          <div className="flex items-center gap-4">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-zinc-950 text-white">
+              <MapPinned size={22} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-[21px] font-semibold leading-tight">Mini Spatial Data Platform</h1>
+              <p className="mt-1.5 text-sm leading-5 text-zinc-500">Sign in with Google to manage spatial records.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold">Mini Spatial Data Platform</h1>
-            <p className="mt-1 text-sm text-zinc-500">Sign in with Google to manage spatial records.</p>
-          </div>
+
+          {googleClientID ? (
+            <div className="grid gap-3">
+              <div ref={buttonRef} className="min-h-11 w-full" />
+              {(loading || (googleClientID && !scriptReady)) && <p className="text-sm text-zinc-500">Preparing Google login</p>}
+            </div>
+          ) : (
+            <div className="grid gap-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <p>Set `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` to enable Google login.</p>
+              <Button onClick={continueLocalDemo} variant="primary">
+                <LogIn size={17} />
+                Continue local demo
+              </Button>
+            </div>
+          )}
+
+          {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         </div>
-
-        {googleClientID ? (
-          <div className="grid gap-3">
-            <div ref={buttonRef} className="min-h-11" />
-            {(loading || (googleClientID && !scriptReady)) && <p className="text-sm text-zinc-500">Preparing Google login</p>}
-          </div>
-        ) : (
-          <div className="grid gap-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            <p>Set `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` to enable Google login.</p>
-            <button
-              type="button"
-              onClick={continueLocalDemo}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded bg-zinc-950 px-4 font-semibold text-white"
-            >
-              <LogIn size={17} />
-              Continue local demo
-            </button>
-          </div>
-        )}
-
-        {error && <div className="mt-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       </section>
     </main>
   );
