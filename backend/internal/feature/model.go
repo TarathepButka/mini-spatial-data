@@ -6,11 +6,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-const FeatureType = "Feature"
+const (
+	FeatureType            = "Feature"
+	GeometryTypePoint      = "Point"
+	GeometryTypeLineString = "LineString"
+	GeometryTypePolygon    = "Polygon"
+)
 
 type Geometry struct {
-	Type        string    `json:"type" bson:"type"`
-	Coordinates []float64 `json:"coordinates" bson:"coordinates"`
+	Type        string `json:"type" bson:"type"`
+	Coordinates any    `json:"coordinates" bson:"coordinates"`
 }
 
 type Feature struct {

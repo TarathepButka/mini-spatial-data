@@ -118,15 +118,8 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 	if strings.TrimSpace(input.Type) != "" && input.Type != FeatureType {
 		return FeatureDocument{}, ValidationError{Message: "type must be Feature"}
 	}
-	if input.Geometry.Type != "Point" {
-		return FeatureDocument{}, ValidationError{Message: "geometry.type must be Point"}
-	}
-	if len(input.Geometry.Coordinates) != 2 {
-		return FeatureDocument{}, ValidationError{Message: "geometry.coordinates must contain longitude and latitude"}
-	}
-	lng := input.Geometry.Coordinates[0]
-	lat := input.Geometry.Coordinates[1]
-	if err := validateLngLat(lng, lat); err != nil {
+	geometry, err := NormalizeGeometry(input.Geometry)
+	if err != nil {
 		return FeatureDocument{}, err
 	}
 	if input.Properties == nil {
@@ -163,7 +156,7 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 
 	return FeatureDocument{
 		Type:       FeatureType,
-		Geometry:   input.Geometry,
+		Geometry:   geometry,
 		Properties: properties,
 		CreatedAt:  now,
 		UpdatedAt:  now,

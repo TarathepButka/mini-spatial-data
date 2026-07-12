@@ -176,9 +176,11 @@ func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, proper
 	if strings.TrimSpace(sourceID) == "" {
 		return feature.FeatureDocument{}, fmt.Errorf("source id is required")
 	}
-	if geometry.Type != "Point" || len(geometry.Coordinates) != 2 {
+	coordinates, err := feature.PointCoordinates(geometry)
+	if err != nil {
 		return feature.FeatureDocument{}, fmt.Errorf("only Point geometry is supported")
 	}
+	geometry = feature.Geometry{Type: feature.GeometryTypePoint, Coordinates: coordinates}
 
 	province := firstString(properties, "pv_tn", "changwat", "province_t", "pv_en")
 	amphoe := firstString(properties, "ap_tn", "amphoe", "ap_en")
@@ -210,8 +212,8 @@ func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, proper
 		"description": description,
 		"source":      "vallaris",
 		"sourceId":    sourceID,
-		"longitude":   geometry.Coordinates[0],
-		"latitude":    geometry.Coordinates[1],
+		"longitude":   coordinates[0],
+		"latitude":    coordinates[1],
 		"createdAt":   now.Format(time.RFC3339),
 		"updatedAt":   now.Format(time.RFC3339),
 	}

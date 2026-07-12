@@ -231,7 +231,7 @@ func BuildFilter(params ListParams) bson.M {
 
 	if params.BBox != nil {
 		filter["geometry"] = bson.M{
-			"$geoWithin": bson.M{
+			"$geoIntersects": bson.M{
 				"$geometry": bboxPolygon(*params.BBox),
 			},
 		}
