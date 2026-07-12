@@ -1,11 +1,12 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type UIEvent, type WheelEvent } from "react";
+import { useMemo, useRef, useState, type UIEvent, type WheelEvent } from "react";
 import { getFeatures } from "../../api/features";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import { useDropdownDismiss } from "../../hooks/useDropdownDismiss";
 import type { BoundingBox, SpatialFeature } from "../../types/geojson";
+import { SUGGESTION_DEBOUNCE_MS, SUGGESTION_PAGE_SIZE } from "./constants";
 import { categoryColor, featureCategory } from "./styles";
-
-const SUGGESTION_PAGE_SIZE = 5;
 
 type SearchAutocompleteProps = {
   search: string;
@@ -31,9 +32,11 @@ export function SearchAutocomplete({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const query = search.trim();
-  const debouncedQuery = useDebouncedValue(query, 250);
+  const debouncedQuery = useDebouncedValue(query, SUGGESTION_DEBOUNCE_MS);
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
   const showSuggestions = open && debouncedQuery.length > 0;
+
+  useDropdownDismiss(containerRef, setOpen);
 
   const suggestionsQuery = useInfiniteQuery({
     queryKey: ["feature-suggestions", debouncedQuery, province, categoryParam, bboxEnabled, bbox],
@@ -57,27 +60,6 @@ export function SearchAutocomplete({
     () => suggestionsQuery.data?.pages.flatMap((page) => page.data.features) ?? [],
     [suggestionsQuery.data],
   );
-
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   function handleScroll(event: UIEvent<HTMLDivElement>) {
     fetchNextPageIfNeeded(event.currentTarget);
@@ -181,17 +163,10 @@ function suggestionDetail(feature: SpatialFeature) {
   const location = [feature.properties.province, feature.properties.amphoe, feature.properties.tambol]
     .filter(Boolean)
     .join(" / ");
-  if (location && feature.properties.hotspotid) return `${location} - ${feature.properties.hotspotid}`;
+
+  if (location && feature.properties.hotspotid) {
+    return `${location} - ${feature.properties.hotspotid}`;
+  }
+
   return location || feature.properties.hotspotid || "No location detail";
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
-
-  return debounced;
 }

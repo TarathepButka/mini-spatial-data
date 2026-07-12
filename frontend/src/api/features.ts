@@ -1,8 +1,11 @@
-import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature } from "../types/geojson";
-import { appConfig } from "../config/runtime";
+import type {
+  BoundingBox,
+  FeatureInput,
+  FeaturesResponse,
+  SpatialFeature,
+} from "../types/geojson";
+import { API_PREFIX, request } from "./client";
 
-const API_BASE_URL = appConfig.apiBaseUrl;
-const API_PREFIX = "/api/v1";
 const FEATURES_PATH = `${API_PREFIX}/features`;
 
 export type FeaturesQuery = {
@@ -20,18 +23,34 @@ export type SeedResult = {
   insertedOrUpdated: number;
 };
 
-export async function getFeatures(query: FeaturesQuery): Promise<FeaturesResponse> {
+export async function getFeatures(
+  query: FeaturesQuery,
+): Promise<FeaturesResponse> {
   const params = new URLSearchParams();
   params.set("page", String(query.page ?? 1));
   params.set("limit", String(query.limit ?? 20));
-  if (query.search) params.set("search", query.search);
-  if (query.category) params.set("category", query.category);
-  if (query.province) params.set("province", query.province);
-  if (query.bbox) params.set("bbox", query.bbox.join(","));
+  if (query.search) {
+    params.set("search", query.search);
+  }
+
+  if (query.category) {
+    params.set("category", query.category);
+  }
+
+  if (query.province) {
+    params.set("province", query.province);
+  }
+
+  if (query.bbox) {
+    params.set("bbox", query.bbox.join(","));
+  }
+
   return request<FeaturesResponse>(`${FEATURES_PATH}?${params.toString()}`);
 }
 
-export async function createFeature(input: FeatureInput): Promise<SpatialFeature> {
+export async function createFeature(
+  input: FeatureInput,
+): Promise<SpatialFeature> {
   return request<SpatialFeature>(FEATURES_PATH, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -39,7 +58,10 @@ export async function createFeature(input: FeatureInput): Promise<SpatialFeature
   });
 }
 
-export async function updateFeature(id: string, input: FeatureInput): Promise<SpatialFeature> {
+export async function updateFeature(
+  id: string,
+  input: FeatureInput,
+): Promise<SpatialFeature> {
   return request<SpatialFeature>(`${FEATURES_PATH}/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -48,25 +70,11 @@ export async function updateFeature(id: string, input: FeatureInput): Promise<Sp
 }
 
 export async function deleteFeature(id: string): Promise<{ deleted: boolean }> {
-  return request<{ deleted: boolean }>(`${FEATURES_PATH}/${id}`, { method: "DELETE" });
+  return request<{ deleted: boolean }>(`${FEATURES_PATH}/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function seedVallaris(): Promise<SeedResult> {
   return request<SeedResult>(`${API_PREFIX}/seed/vallaris`, { method: "POST" });
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    ...init,
-  });
-  const contentType = response.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json") ? await response.json() : null;
-
-  if (!response.ok) {
-    const message = payload?.error?.message ?? `Request failed with status ${response.status}`;
-    throw new Error(message);
-  }
-
-  return payload as T;
 }

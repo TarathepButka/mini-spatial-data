@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature } from "../../api/features";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../types/geojson";
 import { useAuth } from "../auth/AuthContext";
 import { CategoryLegend } from "./CategoryLegend";
@@ -382,18 +383,5 @@ function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
-
   return "Please try again.";
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setDebounced(value), delayMs);
-
-    return () => window.clearTimeout(timeout);
-  }, [delayMs, value]);
-
-  return debounced;
 }
