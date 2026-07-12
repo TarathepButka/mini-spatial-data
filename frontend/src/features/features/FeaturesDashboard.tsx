@@ -2,21 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature } from "../../api/features";
-import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature } from "../../types/geojson";
+import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../types/geojson";
 import { useAuth } from "../auth/AuthContext";
 import { CategoryLegend } from "./CategoryLegend";
 import { DeleteFeatureDialog } from "./DeleteFeatureDialog";
 import { FeatureFormPanel } from "./FeatureFormPanel";
 import { FeatureMap } from "./FeatureMap";
 import { FeaturesTable } from "./FeaturesTable";
+import { DEFAULT_COORDINATES, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, SEARCH_COMMIT_DELAY_MS } from "./constants";
+import { draftPointGeometry } from "./geometry";
 import { Toolbar } from "./Toolbar";
 import { UserMenu } from "./UserMenu";
 import { featureCategory } from "./styles";
-
-const DEFAULT_COORDINATES: [number, number] = [100.5018, 13.7563];
-const DEFAULT_PAGE_SIZE = 20;
-const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
-const SEARCH_COMMIT_DELAY_MS = 3000;
 
 export function FeaturesDashboard() {
   const { user, logout } = useAuth();
@@ -35,7 +32,7 @@ export function FeaturesDashboard() {
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingFeature, setEditingFeature] = useState<SpatialFeature | null>(null);
-  const [draftCoordinates, setDraftCoordinates] = useState<[number, number] | null>(null);
+  const [draftGeometry, setDraftGeometry] = useState<SpatialGeometry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SpatialFeature | null>(null);
 
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
@@ -186,7 +183,7 @@ export function FeaturesDashboard() {
   );
 
   function handleMapClick(coordinates: [number, number]) {
-    setDraftCoordinates(coordinates);
+    setDraftGeometry(draftPointGeometry(coordinates));
     if (!formOpen) {
       setEditingFeature(null);
       setFormMode("create");
@@ -197,7 +194,7 @@ export function FeaturesDashboard() {
   function handleAdd() {
     setEditingFeature(null);
     setFormMode("create");
-    setDraftCoordinates(draftCoordinates ?? DEFAULT_COORDINATES);
+    setDraftGeometry(draftGeometry ?? draftPointGeometry(DEFAULT_COORDINATES));
     setFormOpen(true);
   }
 
@@ -208,9 +205,18 @@ export function FeaturesDashboard() {
   function handleEdit(feature: SpatialFeature) {
     setEditingFeature(feature);
     setFormMode("edit");
-    setDraftCoordinates(feature.geometry.coordinates);
+    setDraftGeometry(feature.geometry);
     focusFeature(feature);
     setFormOpen(true);
+  }
+
+  function handleDraftGeometryChange(geometry: SpatialGeometry | null, meta?: { finished?: boolean }) {
+    setDraftGeometry(geometry);
+    if (geometry && meta?.finished && !formOpen) {
+      setEditingFeature(null);
+      setFormMode("create");
+      setFormOpen(true);
+    }
   }
 
   function handleDelete(feature: SpatialFeature) {
@@ -228,12 +234,18 @@ export function FeaturesDashboard() {
   }
 
   function confirmDelete() {
-    if (!deleteTarget) return;
+    if (!deleteTarget) {
+      return;
+    }
+
     deleteMutation.mutate(deleteTarget.id);
   }
 
   function closeDeleteDialog() {
-    if (deleteMutation.isPending) return;
+    if (deleteMutation.isPending) {
+      return;
+    }
+
     setDeleteTarget(null);
   }
 
@@ -242,6 +254,7 @@ export function FeaturesDashboard() {
       updateMutation.mutate({ id: editingFeature.id, input });
       return;
     }
+
     createMutation.mutate(input);
   }
 
@@ -250,6 +263,7 @@ export function FeaturesDashboard() {
       if (current && current.every((value, index) => Math.abs(value - nextBBox[index]) < 0.0001)) {
         return current;
       }
+
       setPage(1);
       return nextBBox;
     });
@@ -258,14 +272,14 @@ export function FeaturesDashboard() {
   function closeForm() {
     setFormOpen(false);
     setEditingFeature(null);
-    setDraftCoordinates(null);
+    setDraftGeometry(null);
   }
 
   const saving = createMutation.isPending || updateMutation.isPending;
   const error = featuresQuery.error ?? mapFeaturesQuery.error;
 
   return (
-    <main className="flex h-screen min-h-[720px] flex-col bg-zinc-100 text-zinc-950">
+    <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-zinc-100 text-zinc-950">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-5 py-4">
         <div>
           <h1 className="text-xl font-semibold tracking-normal">Mini Spatial Data Platform</h1>
@@ -275,12 +289,12 @@ export function FeaturesDashboard() {
         </div>
       </header>
 
-        <Toolbar
-          search={search}
-          onSearchChange={setSearch}
-          onSearchCommit={commitSearch}
-          onSuggestionSelect={focusFeature}
-          province={province}
+      <Toolbar
+        search={search}
+        onSearchChange={setSearch}
+        onSearchCommit={commitSearch}
+        onSuggestionSelect={focusFeature}
+        province={province}
         onProvinceChange={setProvince}
         provinceOptions={provinceOptions}
         categories={categories}
@@ -320,9 +334,10 @@ export function FeaturesDashboard() {
             features={mapFeatures}
             selectedFeatureId={selectedFeatureId}
             focusRequestId={mapFocusRequestId}
-            pendingCoordinates={draftCoordinates}
+            draftGeometry={draftGeometry}
             bboxEnabled={bboxEnabled}
             onMapClick={handleMapClick}
+            onDraftGeometryChange={handleDraftGeometryChange}
             onBoundsChange={handleBoundsChange}
             onEdit={handleEdit}
             onDelete={handleDelete}
@@ -339,10 +354,11 @@ export function FeaturesDashboard() {
           open={formOpen}
           mode={formMode}
           feature={editingFeature}
-          coordinates={draftCoordinates}
+          geometry={draftGeometry}
           saving={saving}
           onClose={closeForm}
-          onPickLocation={() => setDraftCoordinates(draftCoordinates ?? DEFAULT_COORDINATES)}
+          onPickLocation={() => setDraftGeometry(draftGeometry ?? draftPointGeometry(DEFAULT_COORDINATES))}
+          onGeometryChange={setDraftGeometry}
           onSubmit={handleSubmit}
         />
 
@@ -351,7 +367,9 @@ export function FeaturesDashboard() {
           feature={deleteTarget}
           deleting={deleteMutation.isPending}
           onOpenChange={(open) => {
-            if (!open) closeDeleteDialog();
+            if (!open) {
+              closeDeleteDialog();
+            }
           }}
           onConfirm={confirmDelete}
         />
@@ -360,20 +378,22 @@ export function FeaturesDashboard() {
   );
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "Please try again.";
+}
+
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebounced(value), delayMs);
+
     return () => window.clearTimeout(timeout);
   }, [delayMs, value]);
 
   return debounced;
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-  return "Please try again.";
 }

@@ -2,6 +2,7 @@ import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "
 import { Check, ChevronDown, ChevronLeft, ChevronRight, LocateFixed, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
+import { geometrySummary } from "./geometry";
 import { SummaryChips } from "./SummaryChips";
 import { categoryColor, featureCategory } from "./styles";
 
@@ -60,13 +61,10 @@ export function FeaturesTable({
         header: "FRP",
         cell: (info) => formatNumber(info.getValue()),
       }),
-      columnHelper.accessor((row) => row.geometry.coordinates, {
-        id: "coordinates",
-        header: "Coordinates",
-        cell: (info) => {
-          const [lng, lat] = info.getValue();
-          return <span className="font-mono text-xs text-zinc-600">{`${lng.toFixed(3)}, ${lat.toFixed(3)}`}</span>;
-        },
+      columnHelper.accessor((row) => geometrySummary(row.geometry), {
+        id: "geometry",
+        header: "Geometry",
+        cell: (info) => <span className="font-mono text-xs text-zinc-600">{info.getValue()}</span>,
       }),
       columnHelper.display({
         id: "actions",
@@ -97,7 +95,7 @@ export function FeaturesTable({
                 event.stopPropagation();
                 onDelete(row.original);
               }}
-              danger
+              variant="danger"
             >
               <Trash2 size={16} />
             </IconButton>
@@ -206,6 +204,7 @@ function PageSizeDropdown({ value, options, onChange }: { value: number; options
 
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
@@ -231,29 +230,29 @@ function PageSizeDropdown({ value, options, onChange }: { value: number; options
         <ChevronDown size={16} className={`shrink-0 transition ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open ? (
         <div
           role="menu"
           className="absolute bottom-full left-0 z-30 mb-2 w-40 rounded border border-zinc-200 bg-white p-2 text-sm text-zinc-700 shadow-lg"
         >
           {options.map((option) => {
-            const active = option === value;
-            return (
-              <button
-                key={option}
-                type="button"
-                role="menuitemradio"
-                aria-checked={active}
-                onClick={() => selectPageSize(option)}
-                className="flex h-9 w-full items-center justify-between rounded px-2 text-left transition hover:bg-zinc-100"
-              >
-                <span>{option} per page</span>
-                {active ? <Check size={16} className="shrink-0 text-zinc-950" /> : null}
-              </button>
-            );
+          const active = option === value;
+          return (
+            <button
+              key={option}
+              type="button"
+              role="menuitemradio"
+              aria-checked={active}
+              onClick={() => selectPageSize(option)}
+              className="flex h-9 w-full items-center justify-between rounded px-2 text-left transition hover:bg-zinc-100"
+            >
+              <span>{option} per page</span>
+              {active ? <Check size={16} className="shrink-0 text-zinc-950" /> : null}
+            </button>
+          );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -262,19 +261,19 @@ function IconButton({
   title,
   onClick,
   children,
-  danger = false,
+  variant = "ghost",
 }: {
   title: string;
   onClick: React.MouseEventHandler<HTMLButtonElement>;
   children: React.ReactNode;
-  danger?: boolean;
+  variant?: "ghost" | "danger";
 }) {
   return (
     <button
       type="button"
       title={title}
       onClick={onClick}
-      className={`rounded p-2 transition ${danger ? "text-red-600 hover:bg-red-50" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"}`}
+      className={`rounded p-2 transition ${variant === "danger" ? "text-red-600 hover:bg-red-50" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"}`}
     >
       {children}
     </button>
@@ -282,6 +281,9 @@ function IconButton({
 }
 
 function formatNumber(value: unknown) {
-  if (typeof value !== "number") return "-";
+  if (typeof value !== "number") {
+    return "-";
+  }
+
   return value.toFixed(2);
 }

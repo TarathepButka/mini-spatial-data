@@ -1,6 +1,7 @@
-﻿import type { SpatialFeature } from "../../types/geojson";
+import type { SpatialFeature } from "../../types/geojson";
+import { CATEGORY_OPTIONS } from "./constants";
 
-export const DEFAULT_CATEGORIES = ["low", "nominal", "high", "manual", "unknown"];
+export const DEFAULT_CATEGORIES = CATEGORY_OPTIONS;
 
 const CATEGORY_COLORS: Record<string, string> = {
   low: "#2f80ed",
@@ -11,7 +12,10 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function categoryColor(category?: string): string {
-  if (!category) return CATEGORY_COLORS.unknown;
+  if (!category) {
+    return CATEGORY_COLORS.unknown;
+  }
+
   return CATEGORY_COLORS[category] ?? stringToColor(category);
 }
 
@@ -21,9 +25,11 @@ export function featureCategory(feature: SpatialFeature): string {
 
 function stringToColor(value: string): string {
   let hash = 0;
+
   for (let index = 0; index < value.length; index += 1) {
     hash = value.charCodeAt(index) + ((hash << 5) - hash);
   }
+
   const hue = Math.abs(hash) % 360;
   return `hsl(${hue} 65% 45%)`;
 }

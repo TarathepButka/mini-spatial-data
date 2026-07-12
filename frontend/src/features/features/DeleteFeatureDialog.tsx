@@ -1,6 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { AlertTriangle, LoaderCircle, Trash2, X } from "lucide-react";
+import { AlertTriangle, LoaderCircle, X } from "lucide-react";
 import type { SpatialFeature } from "../../types/geojson";
+import { geometrySummary } from "./geometry";
 import { featureCategory } from "./styles";
 
 type DeleteFeatureDialogProps = {
@@ -12,8 +13,6 @@ type DeleteFeatureDialogProps = {
 };
 
 export function DeleteFeatureDialog({ open, feature, deleting, onOpenChange, onConfirm }: DeleteFeatureDialogProps) {
-  const coordinates = feature?.geometry.coordinates;
-
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -52,10 +51,7 @@ export function DeleteFeatureDialog({ open, feature, deleting, onOpenChange, onC
               <Detail label="Province" value={feature?.properties.province ?? "-"} />
               <Detail label="Confidence" value={feature ? featureCategory(feature) : "-"} />
             </div>
-            <Detail
-              label="Coordinates"
-              value={coordinates ? `${coordinates[0].toFixed(5)}, ${coordinates[1].toFixed(5)}` : "-"}
-            />
+            <Detail label="Geometry" value={feature ? geometrySummary(feature.geometry) : "-"} />
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-zinc-200 px-5 py-4">
@@ -74,7 +70,7 @@ export function DeleteFeatureDialog({ open, feature, deleting, onOpenChange, onC
               disabled={!feature || deleting}
               className="inline-flex h-10 items-center justify-center gap-2 rounded bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {deleting ? <LoaderCircle size={17} className="animate-spin" /> : <Trash2 size={17} />}
+              {deleting ? <LoaderCircle size={17} className="animate-spin" /> : null}
               {deleting ? "Deleting" : "Delete"}
             </button>
           </div>
