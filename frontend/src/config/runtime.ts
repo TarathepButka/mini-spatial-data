@@ -10,7 +10,10 @@ declare global {
 }
 
 function readConfigValue(key: keyof RuntimeConfig) {
-  const runtimeValue = typeof window !== "undefined" ? window.__MINI_SPATIAL_CONFIG__?.[key] : undefined;
+  const runtimeValue =
+    typeof window !== "undefined"
+      ? window.__MINI_SPATIAL_CONFIG__?.[key]
+      : undefined;
   const buildValue = import.meta.env[key] as string | undefined;
   return (runtimeValue || buildValue || "").trim();
 }
