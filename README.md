@@ -7,14 +7,14 @@ The app manages GeoJSON `Feature` records, displays them in a table, and renders
 ## Features
 
 - REST API for list, get, create, update, delete
-- GeoJSON `Feature` and `FeatureCollection` responses
+- GeoJSON `Feature` and `FeatureCollection` responses for `Point`, `LineString`, and `Polygon`
 - MongoDB `2dsphere` index for spatial queries
 - BBox query: `GET /api/v1/features?bbox=minLng,minLat,maxLng,maxLat`
 - Nearby query: `GET /api/v1/features/nearby?lng=&lat=&radius=`
 - Vallaris seed endpoint for Thailand data using `ct_en=Thailand`
-- React dashboard with MapLibre map and TanStack Table
-- Click map to create a feature
-- Edit/delete from table or marker popup
+- React dashboard with MapLibre map, Terra Draw editor, and TanStack Table
+- Click map or draw Point/LineString/Polygon geometry to create a feature
+- Edit/delete from table or map popup
 - Search, province filter, category legend filter
 - Viewport loading via `map.on("moveend")`
 - Docker Compose for frontend, backend, and MongoDB
@@ -177,7 +177,7 @@ Google login body:
 }
 ```
 
-Create/update body:
+Create/update body supports `Point`, `LineString`, and `Polygon` GeoJSON geometry:
 
 ```json
 {
@@ -191,6 +191,51 @@ Create/update body:
     "category": "manual",
     "province": "Bangkok",
     "description": "Created from map click"
+  }
+}
+```
+
+LineString geometry example:
+
+```json
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [100.5018, 13.7563],
+      [100.61, 13.82],
+      [100.72, 13.78]
+    ]
+  },
+  "properties": {
+    "name": "Manual route",
+    "category": "manual",
+    "province": "Bangkok"
+  }
+}
+```
+
+Polygon geometry example:
+
+```json
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [100.48, 13.73],
+        [100.56, 13.73],
+        [100.56, 13.79],
+        [100.48, 13.73]
+      ]
+    ]
+  },
+  "properties": {
+    "name": "Manual area",
+    "category": "manual",
+    "province": "Bangkok"
   }
 }
 ```
@@ -225,6 +270,7 @@ Frontend:
 
 ```bash
 cd frontend
+npm run test
 npx tsc --noEmit
 npm run build
 ```
