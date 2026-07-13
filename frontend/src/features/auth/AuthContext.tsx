@@ -1,50 +1,62 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   AuthUser,
   clearLegacyAuthStorage,
   getCurrentUser,
   loginWithGoogleCredential,
   logoutCurrentUser,
+  switchCurrentRole,
 } from "../../api/auth";
 import { LoginScreen } from "./LoginScreen";
+import {
+  permissionFlagsForUser,
+  type PermissionFlags,
+} from "./permissionFlags";
 
 type AuthContextValue = {
   user: AuthUser | null;
+  permissionFlags: PermissionFlags;
   loading: boolean;
   loginWithGoogle: (credential: string) => Promise<void>;
-  continueLocalDemo: () => void;
+  switchRole: (role: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const localDemoUser: AuthUser = {
-  sub: "local-demo",
-  email: "local-demo@example.com",
-  emailVerified: true,
-  name: "Local Demo",
-  picture: "",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [localDemo, setLocalDemo] = useState(false);
 
   useEffect(() => {
     clearLegacyAuthStorage();
     let cancelled = false;
     getCurrentUser()
       .then((response) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
+
         setUser(response.user);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
+
         setUser(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -55,20 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
+      permissionFlags: permissionFlagsForUser(user),
       loading,
       loginWithGoogle: async (credential: string) => {
         const response = await loginWithGoogleCredential(credential);
         setUser(response.user);
-        setLocalDemo(false);
       },
-      continueLocalDemo: () => {
-        setUser(localDemoUser);
-        setLocalDemo(true);
+      switchRole: async (role: string) => {
+        const response = await switchCurrentRole(role);
+        setUser(response.user);
       },
       logout: () => {
         logoutCurrentUser().catch(() => undefined);
         setUser(null);
-        setLocalDemo(false);
       },
     }),
     [loading, user],
@@ -76,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {user || localDemo ? children : <LoginScreen loading={loading} />}
+      {user ? children : <LoginScreen loading={loading} />}
     </AuthContext.Provider>
   );
 }
@@ -86,5 +97,6 @@ export function useAuth() {
   if (!value) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
+
   return value;
 }

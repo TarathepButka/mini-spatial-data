@@ -20,6 +20,8 @@ type ToolbarProps = {
   bboxEnabled: boolean;
   bbox: BoundingBox | null;
   onBBoxEnabledChange: (enabled: boolean) => void;
+  canCreate: boolean;
+  canSeed: boolean;
   onAdd: () => void;
   onSeed: () => void;
   seedLoading: boolean;
@@ -39,6 +41,8 @@ export function Toolbar({
   bboxEnabled,
   bbox,
   onBBoxEnabledChange,
+  canCreate,
+  canSeed,
   onAdd,
   onSeed,
   seedLoading,
@@ -71,21 +75,25 @@ export function Toolbar({
         Viewport
       </label>
 
-      <Button
-        title="Seed Vallaris Thailand data"
-        onClick={onSeed}
-        disabled={seedLoading}
-        variant="secondary"
-        className="px-3"
-      >
-        <Database size={17} />
-        {seedLoading ? "Seeding" : "Seed"}
-      </Button>
+      {canSeed ? (
+        <Button
+          title="Seed Vallaris Thailand data"
+          onClick={onSeed}
+          disabled={seedLoading}
+          variant="secondary"
+          className="px-3"
+        >
+          <Database size={17} />
+          {seedLoading ? "Seeding" : "Seed"}
+        </Button>
+      ) : null}
 
-      <Button title="Add feature" onClick={onAdd} variant="primary">
-        <Plus size={18} />
-        Add
-      </Button>
+      {canCreate ? (
+        <Button title="Add feature" onClick={onAdd} variant="primary">
+          <Plus size={18} />
+          Add
+        </Button>
+      ) : null}
     </div>
   );
 }
