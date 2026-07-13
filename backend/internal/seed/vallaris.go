@@ -55,22 +55,21 @@ func NewHandler(cfg config.Config, featureService *feature.Service) *Handler {
 	}
 }
 
-func RegisterRoutes(router gin.IRouter, handler *Handler, requireAuth gin.HandlerFunc) {
+func RegisterRoutes(router gin.IRouter, handler *Handler, requireSeedPermission gin.HandlerFunc) {
 	seedGroup := router.Group("/seed")
-	if requireAuth == nil {
+	if requireSeedPermission == nil {
 		seedGroup.POST("/vallaris", handler.SeedVallaris)
+
 		return
 	}
-	seedGroup.POST("/vallaris", requireAuth, handler.SeedVallaris)
+
+	seedGroup.POST("/vallaris", requireSeedPermission, handler.SeedVallaris)
 }
 
 func (handler *Handler) SeedVallaris(c *gin.Context) {
-	if strings.EqualFold(handler.cfg.AppEnv, "production") {
-		c.JSON(http.StatusForbidden, feature.ErrorResponse{Error: feature.ErrorBody{Code: "forbidden", Message: "seed endpoint is disabled in production"}})
-		return
-	}
 	if strings.TrimSpace(handler.cfg.VallarisAPIKey) == "" {
 		c.JSON(http.StatusBadRequest, feature.ErrorResponse{Error: feature.ErrorBody{Code: "missing_api_key", Message: "VALLARIS_API_KEY is required"}})
+
 		return
 	}
 
@@ -78,8 +77,10 @@ func (handler *Handler) SeedVallaris(c *gin.Context) {
 	if err != nil {
 		log.Printf("seed Vallaris failed: %s", sanitizeExternalError(err, handler.cfg.VallarisAPIKey))
 		c.JSON(http.StatusBadGateway, feature.ErrorResponse{Error: feature.ErrorBody{Code: "seed_failed", Message: "failed to import Vallaris data"}})
+
 		return
 	}
+
 	c.JSON(http.StatusOK, result)
 }
 
@@ -95,9 +96,11 @@ func (handler *Handler) ImportVallaris(ctx context.Context) (ImportResult, error
 		if err != nil {
 			return result, err
 		}
+
 		if payload.NumberMatched > result.NumberMatched {
 			result.NumberMatched = payload.NumberMatched
 		}
+
 		result.NumberReturned += payload.NumberReturned
 
 		now := time.Now().UTC()
@@ -107,22 +110,26 @@ func (handler *Handler) ImportVallaris(ctx context.Context) (ImportResult, error
 			if err != nil {
 				continue
 			}
+
 			documents = append(documents, document)
 		}
 		upserted, err := handler.featureService.UpsertSeedDocuments(ctx, documents)
 		if err != nil {
 			return result, err
 		}
+
 		result.InsertedOrUpdated += upserted
 
 		returned := payload.NumberReturned
 		if returned == 0 {
 			returned = len(payload.Features)
 		}
+
 		if returned == 0 || offset+returned >= payload.NumberMatched {
 			break
 		}
 	}
+
 	return result, nil
 }
 
@@ -131,6 +138,7 @@ func (handler *Handler) fetchPage(ctx context.Context, limit int, offset int) (v
 	if err != nil {
 		return vallarisResponse{}, fmt.Errorf("invalid Vallaris URL: %w", err)
 	}
+
 	query := endpoint.Query()
 	query.Set("api_key", handler.cfg.VallarisAPIKey)
 	query.Set("ct_en", "Thailand")
@@ -142,12 +150,14 @@ func (handler *Handler) fetchPage(ctx context.Context, limit int, offset int) (v
 	if err != nil {
 		return vallarisResponse{}, err
 	}
+
 	request.Header.Set("Accept", "application/geo+json, application/json")
 
 	response, err := handler.client.Do(request)
 	if err != nil {
 		return vallarisResponse{}, err
 	}
+
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
@@ -158,6 +168,7 @@ func (handler *Handler) fetchPage(ctx context.Context, limit int, offset int) (v
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 		return vallarisResponse{}, err
 	}
+
 	return payload, nil
 }
 
@@ -165,10 +176,12 @@ func sanitizeExternalError(err error, apiKey string) string {
 	if err == nil {
 		return ""
 	}
+
 	message := err.Error()
 	if strings.TrimSpace(apiKey) != "" {
 		message = strings.ReplaceAll(message, apiKey, "[redacted]")
 	}
+
 	return apiKeyQueryPattern.ReplaceAllString(message, `${1}[redacted]`)
 }
 
@@ -176,10 +189,12 @@ func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, proper
 	if strings.TrimSpace(sourceID) == "" {
 		return feature.FeatureDocument{}, fmt.Errorf("source id is required")
 	}
+
 	coordinates, err := feature.PointCoordinates(geometry)
 	if err != nil {
 		return feature.FeatureDocument{}, fmt.Errorf("only Point geometry is supported")
 	}
+
 	geometry = feature.Geometry{Type: feature.GeometryTypePoint, Coordinates: coordinates}
 
 	province := firstString(properties, "pv_tn", "changwat", "province_t", "pv_en")
@@ -190,10 +205,12 @@ func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, proper
 	if confidence == "" {
 		confidence = "unknown"
 	}
+
 	location := compactJoin(" / ", province, amphoe, tambol)
 	if location == "" {
 		location = firstString(properties, "hotspotid", "ct_en")
 	}
+
 	name := strings.TrimSpace("Hotspot - " + location)
 	landUse := firstString(properties, "lu_hp_name", "lu_name")
 	date := firstString(properties, "th_date", "acq_date")
@@ -246,11 +263,13 @@ func firstString(properties map[string]any, keys ...string) string {
 		if !ok || value == nil {
 			continue
 		}
+
 		text := strings.TrimSpace(fmt.Sprint(value))
 		if text != "" && text != "<nil>" {
 			return text
 		}
 	}
+
 	return ""
 }
 
@@ -262,5 +281,6 @@ func compactJoin(separator string, values ...string) string {
 			items = append(items, trimmed)
 		}
 	}
+
 	return strings.Join(items, separator)
 }

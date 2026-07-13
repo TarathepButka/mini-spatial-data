@@ -24,6 +24,7 @@ func (service *Service) List(ctx context.Context, params ListParams) (ListRespon
 	if err != nil {
 		return ListResponse{}, err
 	}
+
 	features := make([]Feature, 0, len(documents))
 	for _, document := range documents {
 		features = append(features, document.ToFeature())
@@ -32,6 +33,7 @@ func (service *Service) List(ctx context.Context, params ListParams) (ListRespon
 	if total > 0 {
 		totalPages = int((total + int64(params.Limit) - 1) / int64(params.Limit))
 	}
+
 	return ListResponse{
 		Data: FeatureCollection{
 			Type:     "FeatureCollection",
@@ -51,10 +53,12 @@ func (service *Service) Nearby(ctx context.Context, params NearbyParams) (ListRe
 	if err != nil {
 		return ListResponse{}, err
 	}
+
 	features := make([]Feature, 0, len(documents))
 	for _, document := range documents {
 		features = append(features, document.ToFeature())
 	}
+
 	return ListResponse{
 		Data: FeatureCollection{
 			Type:     "FeatureCollection",
@@ -74,19 +78,23 @@ func (service *Service) Get(ctx context.Context, id string) (Feature, error) {
 	if err != nil {
 		return Feature{}, err
 	}
+
 	return document.ToFeature(), nil
 }
 
-func (service *Service) Create(ctx context.Context, input FeatureInput) (Feature, error) {
+func (service *Service) Create(ctx context.Context, input FeatureInput, actor *Actor) (Feature, error) {
 	now := service.now()
 	document, err := NormalizeInput(input, now)
 	if err != nil {
 		return Feature{}, err
 	}
+
+	document.CreatedBy = actor
 	created, err := service.repository.Create(ctx, document)
 	if err != nil {
 		return Feature{}, err
 	}
+
 	return created.ToFeature(), nil
 }
 
@@ -96,10 +104,12 @@ func (service *Service) Update(ctx context.Context, id string, input FeatureInpu
 	if err != nil {
 		return Feature{}, err
 	}
+
 	updated, err := service.repository.Update(ctx, id, document)
 	if err != nil {
 		return Feature{}, err
 	}
+
 	return updated.ToFeature(), nil
 }
 
@@ -107,10 +117,28 @@ func (service *Service) Delete(ctx context.Context, id string) error {
 	return service.repository.Delete(ctx, id)
 }
 
+func (service *Service) DeleteOwn(ctx context.Context, id string, actor *Actor) error {
+	if actor == nil {
+		return ErrForbidden
+	}
+
+	document, err := service.repository.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if !sameActor(document.CreatedBy, actor) {
+		return ErrForbidden
+	}
+
+	return service.repository.Delete(ctx, id)
+}
+
 func (service *Service) UpsertSeedDocuments(ctx context.Context, documents []FeatureDocument) (int, error) {
 	if len(documents) == 0 {
 		return 0, nil
 	}
+
 	return service.repository.UpsertManyBySourceID(ctx, documents)
 }
 
@@ -118,25 +146,31 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 	if strings.TrimSpace(input.Type) != "" && input.Type != FeatureType {
 		return FeatureDocument{}, ValidationError{Message: "type must be Feature"}
 	}
+
 	geometry, err := NormalizeGeometry(input.Geometry)
 	if err != nil {
 		return FeatureDocument{}, err
 	}
+
 	if input.Properties == nil {
 		return FeatureDocument{}, ValidationError{Message: "properties is required"}
 	}
 
 	properties := copyProperties(input.Properties)
+	delete(properties, "createdBy")
+	delete(properties, "updatedBy")
 	name := strings.TrimSpace(stringProperty(properties, "name"))
 	if name == "" {
 		return FeatureDocument{}, ValidationError{Message: "properties.name is required"}
 	}
+
 	properties["name"] = name
 
 	category := strings.TrimSpace(stringProperty(properties, "category"))
 	if category == "" {
 		category = "manual"
 	}
+
 	properties["category"] = category
 
 	province := strings.TrimSpace(stringProperty(properties, "province"))
@@ -163,13 +197,27 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 	}, nil
 }
 
+func sameActor(left *Actor, right *Actor) bool {
+	if left == nil || right == nil {
+		return false
+	}
+
+	if strings.TrimSpace(left.Subject) != "" && left.Subject == right.Subject {
+		return true
+	}
+
+	return strings.EqualFold(strings.TrimSpace(left.Email), strings.TrimSpace(right.Email)) && strings.TrimSpace(right.Email) != ""
+}
+
 func stringProperty(properties map[string]any, key string) string {
 	value, ok := properties[key]
 	if !ok || value == nil {
 		return ""
 	}
+
 	if typed, ok := value.(string); ok {
 		return typed
 	}
+
 	return strings.TrimSpace(fmt.Sprint(value))
 }

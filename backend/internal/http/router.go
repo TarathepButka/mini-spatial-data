@@ -28,8 +28,13 @@ func NewRouter(cfg config.Config, authHandler *auth.Handler, featureHandler *fea
 	})
 
 	auth.RegisterRoutes(api, authHandler)
-	feature.RegisterRoutes(api, featureHandler, authHandler.RequireAuthIfEnabled())
-	seed.RegisterRoutes(api, seedHandler, authHandler.RequireAuthIfEnabled())
+	feature.RegisterRoutes(api, featureHandler, feature.RoutePermissions{
+		Read:   authHandler.RequirePermissionIfAuthEnabled(auth.PermissionRead),
+		Create: authHandler.RequirePermission(auth.PermissionCreate),
+		Edit:   authHandler.RequirePermission(auth.PermissionEdit),
+		Delete: authHandler.RequireAuth(),
+	})
+	seed.RegisterRoutes(api, seedHandler, authHandler.RequirePermission(auth.PermissionSeed))
 
 	return router
 }

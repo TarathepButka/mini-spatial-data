@@ -30,12 +30,19 @@ type FeatureCollection struct {
 	Features []Feature `json:"features"`
 }
 
+type Actor struct {
+	Subject string `json:"sub" bson:"sub"`
+	Email   string `json:"email" bson:"email"`
+	Name    string `json:"name,omitempty" bson:"name,omitempty"`
+}
+
 type FeatureDocument struct {
 	ID         bson.ObjectID  `bson:"_id,omitempty"`
 	SourceID   string         `bson:"sourceId,omitempty"`
 	Type       string         `bson:"type"`
 	Geometry   Geometry       `bson:"geometry"`
 	Properties map[string]any `bson:"properties"`
+	CreatedBy  *Actor         `bson:"createdBy,omitempty"`
 	CreatedAt  time.Time      `bson:"createdAt,omitempty"`
 	UpdatedAt  time.Time      `bson:"updatedAt,omitempty"`
 }
@@ -45,11 +52,17 @@ func (document FeatureDocument) ToFeature() Feature {
 	if document.CreatedAt.IsZero() == false {
 		properties["createdAt"] = document.CreatedAt.UTC().Format(time.RFC3339)
 	}
+
 	if document.UpdatedAt.IsZero() == false {
 		properties["updatedAt"] = document.UpdatedAt.UTC().Format(time.RFC3339)
 	}
+
 	if document.SourceID != "" {
 		properties["sourceId"] = document.SourceID
+	}
+
+	if document.CreatedBy != nil {
+		properties["createdBy"] = *document.CreatedBy
 	}
 
 	return Feature{
@@ -65,5 +78,6 @@ func copyProperties(properties map[string]any) map[string]any {
 	for key, value := range properties {
 		cloned[key] = value
 	}
+
 	return cloned
 }

@@ -17,16 +17,20 @@ func TestBuildFilterSupportsCategoryProvinceAndBBox(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected category $in filter, got %#v", filter["properties.category"])
 	}
+
 	if _, ok := category["$in"]; !ok {
 		t.Fatalf("expected $in category filter, got %#v", category)
 	}
+
 	if filter["properties.province"] != "Suphan Buri" {
 		t.Fatalf("unexpected province filter: %#v", filter["properties.province"])
 	}
+
 	geometry, ok := filter["geometry"].(bson.M)
 	if !ok {
 		t.Fatalf("expected geometry filter, got %#v", filter["geometry"])
 	}
+
 	if _, ok := geometry["$geoIntersects"]; !ok {
 		t.Fatalf("expected bbox filter to use $geoIntersects, got %#v", geometry)
 	}

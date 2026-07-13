@@ -25,12 +25,15 @@ func TestNormalizeVallarisFeature(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if document.SourceID != "source-1" {
 		t.Fatalf("unexpected source id: %s", document.SourceID)
 	}
+
 	if document.Properties["category"] != "nominal" {
 		t.Fatalf("expected nominal category, got %#v", document.Properties["category"])
 	}
+
 	if document.Properties["province"] != "Suphan Buri" {
 		t.Fatalf("expected province to be normalized, got %#v", document.Properties["province"])
 	}
@@ -42,6 +45,7 @@ func TestSanitizeExternalErrorRedactsAPIKey(t *testing.T) {
 	if sanitized == err.Error() {
 		t.Fatal("expected error to be sanitized")
 	}
+
 	if sanitized == "" || sanitized != "Get \"https://example.test/items?api_key=[redacted]&limit=100\": dial tcp failed" {
 		t.Fatalf("unexpected sanitized error: %s", sanitized)
 	}
