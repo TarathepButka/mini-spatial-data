@@ -12,6 +12,17 @@ import (
 
 const userContextKey = "authUser"
 
+func UserFromContext(c *gin.Context) (User, bool) {
+	value, ok := c.Get(userContextKey)
+	if !ok {
+		return User{}, false
+	}
+
+	user, ok := value.(User)
+
+	return user, ok
+}
+
 type Handler struct {
 	service        *Service
 	authRequired   bool
@@ -35,12 +46,14 @@ func RegisterRoutes(router gin.IRouter, handler *Handler) {
 	authGroup.POST("/google", handler.GoogleLogin)
 	authGroup.POST("/logout", handler.Logout)
 	authGroup.GET("/me", handler.RequireAuth(), handler.Me)
+	authGroup.POST("/role", handler.RequireAuth(), handler.SwitchRole)
 }
 
 func (handler *Handler) GoogleLogin(c *gin.Context) {
 	var request GoogleLoginRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		writeAuthError(c, http.StatusBadRequest, "validation_error", "request body must include Google credential")
+
 		return
 	}
 
@@ -55,7 +68,9 @@ func (handler *Handler) GoogleLogin(c *gin.Context) {
 			status = http.StatusForbidden
 			code = "email_not_verified"
 		}
+
 		writeAuthError(c, status, code, err.Error())
+
 		return
 	}
 
@@ -72,9 +87,43 @@ func (handler *Handler) Me(c *gin.Context) {
 	user, ok := c.Get(userContextKey)
 	if !ok {
 		writeAuthError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
+
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+func (handler *Handler) SwitchRole(c *gin.Context) {
+	var request SwitchRoleRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeAuthError(c, http.StatusBadRequest, "validation_error", "request body must include role")
+
+		return
+	}
+
+	user, ok := UserFromContext(c)
+	if !ok {
+		writeAuthError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
+
+		return
+	}
+
+	response, err := handler.service.SwitchRole(c.Request.Context(), user, request.Role)
+	if err != nil {
+		if errors.Is(err, ErrRoleNotAllowed) {
+			writeAuthError(c, http.StatusForbidden, "forbidden", "role is not available for this user")
+
+			return
+		}
+
+		writeAuthError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
+
+		return
+	}
+
+	handler.setAuthCookie(c, response)
+	c.JSON(http.StatusOK, response)
 }
 
 func (handler *Handler) RequireAuthIfEnabled() gin.HandlerFunc {
@@ -83,9 +132,12 @@ func (handler *Handler) RequireAuthIfEnabled() gin.HandlerFunc {
 			if user, err := handler.userFromRequest(c); err == nil {
 				c.Set(userContextKey, user)
 			}
+
 			c.Next()
+
 			return
 		}
+
 		handler.RequireAuth()(c)
 	}
 }
@@ -96,16 +148,56 @@ func (handler *Handler) RequireAuth() gin.HandlerFunc {
 		if err != nil {
 			writeAuthError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
 			c.Abort()
+
 			return
 		}
+
 		c.Set(userContextKey, user)
 		c.Next()
 	}
 }
 
+func (handler *Handler) RequirePermission(permission Permission) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user, err := handler.userFromRequest(c)
+		if err != nil {
+			writeAuthError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
+			c.Abort()
+
+			return
+		}
+
+		if !user.HasPermission(permission) {
+			writeAuthError(c, http.StatusForbidden, "forbidden", "permission denied")
+			c.Abort()
+
+			return
+		}
+
+		c.Set(userContextKey, user)
+		c.Next()
+	}
+}
+
+func (handler *Handler) RequirePermissionIfAuthEnabled(permission Permission) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !handler.authRequired {
+			if user, err := handler.userFromRequest(c); err == nil {
+				c.Set(userContextKey, user)
+			}
+
+			c.Next()
+
+			return
+		}
+
+		handler.RequirePermission(permission)(c)
+	}
+}
+
 func (handler *Handler) userFromRequest(c *gin.Context) (User, error) {
 	if cookieToken, err := c.Cookie(handler.cookieName); err == nil {
-		return handler.service.ParseToken(cookieToken)
+		return handler.service.ParseToken(c.Request.Context(), cookieToken)
 	}
 
 	header := c.GetHeader("Authorization")
@@ -113,7 +205,8 @@ func (handler *Handler) userFromRequest(c *gin.Context) (User, error) {
 	if token == header {
 		return User{}, ErrInvalidToken
 	}
-	return handler.service.ParseToken(token)
+
+	return handler.service.ParseToken(c.Request.Context(), token)
 }
 
 func (handler *Handler) setAuthCookie(c *gin.Context, response AuthResponse) {
@@ -121,6 +214,7 @@ func (handler *Handler) setAuthCookie(c *gin.Context, response AuthResponse) {
 	if maxAge <= 0 {
 		maxAge = 1
 	}
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     handler.cookieName,
 		Value:    response.Token,
@@ -151,6 +245,7 @@ func parseExpiresAt(value string) time.Time {
 	if err != nil {
 		return time.Now().Add(24 * time.Hour)
 	}
+
 	return expiresAt
 }
 

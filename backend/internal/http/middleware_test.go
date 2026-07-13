@@ -14,6 +14,7 @@ func TestCORSMiddlewareWildcardDoesNotAllowCredentials(t *testing.T) {
 	if response.Header().Get("Access-Control-Allow-Origin") != "*" {
 		t.Fatalf("expected public wildcard origin, got %q", response.Header().Get("Access-Control-Allow-Origin"))
 	}
+
 	if response.Header().Get("Access-Control-Allow-Credentials") != "" {
 		t.Fatalf("wildcard origin must not allow credentials")
 	}
@@ -25,6 +26,7 @@ func TestCORSMiddlewareExplicitOriginAllowsCredentials(t *testing.T) {
 	if response.Header().Get("Access-Control-Allow-Origin") != "https://app.example" {
 		t.Fatalf("expected explicit origin, got %q", response.Header().Get("Access-Control-Allow-Origin"))
 	}
+
 	if response.Header().Get("Access-Control-Allow-Credentials") != "true" {
 		t.Fatalf("explicit origin should allow credentials")
 	}
@@ -42,5 +44,6 @@ func exerciseCORS(allowedOrigins []string, origin string) *httptest.ResponseReco
 	request.Header.Set("Origin", origin)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
+
 	return response
 }

@@ -21,6 +21,7 @@ func TestValidateRejectsInsecureExampleSecret(t *testing.T) {
 		AppEnv:        "production",
 		AuthJWTSecret: "change-me-to-at-least-32-random-characters",
 	}
+
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -31,6 +32,7 @@ func TestValidateAcceptsStrongSecret(t *testing.T) {
 		AppEnv:        "production",
 		AuthJWTSecret: "local-test-secret-with-more-than-32-characters",
 	}
+
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected validation error: %v", err)
 	}

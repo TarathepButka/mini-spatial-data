@@ -9,7 +9,7 @@ import (
 func TestRegisterRoutesExposesFeaturesOnly(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	RegisterRoutes(router.Group(""), NewHandler(nil), nil)
+	RegisterRoutes(router.Group(""), NewHandler(nil), RoutePermissions{})
 
 	routes := map[string]bool{}
 	for _, route := range router.Routes() {

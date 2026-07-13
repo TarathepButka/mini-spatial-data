@@ -20,6 +20,7 @@ export function CategoryFilterDropdown({ categories, selectedCategories, onChang
   function toggle(category: string) {
     if (selectedCategories.includes(category)) {
       onChange(selectedCategories.filter((item) => item !== category));
+
       return;
     }
 
@@ -43,6 +44,7 @@ export function CategoryFilterDropdown({ categories, selectedCategories, onChang
 
       {options.map((category) => {
         const active = selectedCategories.includes(category);
+
         return (
           <DropdownMenuItem key={category} role="menuitemcheckbox" aria-checked={active} onClick={() => toggle(category)}>
             <span className="inline-flex min-w-0 items-center gap-2">

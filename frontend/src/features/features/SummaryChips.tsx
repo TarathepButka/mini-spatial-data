@@ -1,4 +1,4 @@
-﻿import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
+import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
 import { featureCategory } from "./styles";
 
 type SummaryChipsProps = {
@@ -11,6 +11,7 @@ export function SummaryChips({ features, meta }: SummaryChipsProps) {
   const categoryCounts = features.reduce<Record<string, number>>((accumulator, feature) => {
     const category = featureCategory(feature);
     accumulator[category] = (accumulator[category] ?? 0) + 1;
+
     return accumulator;
   }, {});
 

@@ -5,6 +5,7 @@ import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature 
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../types/geojson";
 import { useAuth } from "../auth/AuthContext";
+import { canDeleteFeature } from "../auth/permissionFlags";
 import { CategoryLegend } from "./CategoryLegend";
 import { DeleteFeatureDialog } from "./DeleteFeatureDialog";
 import { FeatureFormPanel } from "./FeatureFormPanel";
@@ -17,8 +18,13 @@ import { UserMenu } from "./UserMenu";
 import { featureCategory } from "./styles";
 
 export function FeaturesDashboard() {
-  const { user, logout } = useAuth();
+  const { user, permissionFlags, logout, switchRole } = useAuth();
   const queryClient = useQueryClient();
+  const {
+    canCreateFeature: canCreate,
+    canEditFeature: canEdit,
+    canSeedVallaris: canSeed,
+  } = permissionFlags;
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
@@ -89,6 +95,7 @@ export function FeaturesDashboard() {
           totalPages: 1,
         },
       };
+
       return mergedResponse;
     },
   });
@@ -175,6 +182,7 @@ export function FeaturesDashboard() {
     const options = [...features, ...mapFeatures]
       .map((feature) => feature.properties.province)
       .filter((value): value is string => Boolean(value));
+
     return Array.from(new Set([...options, province].filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }, [features, mapFeatures, province]);
 
@@ -184,6 +192,10 @@ export function FeaturesDashboard() {
   );
 
   function handleMapClick(coordinates: [number, number]) {
+    if (!canCreate) {
+      return;
+    }
+
     setDraftGeometry(draftPointGeometry(coordinates));
     if (!formOpen) {
       setEditingFeature(null);
@@ -193,6 +205,10 @@ export function FeaturesDashboard() {
   }
 
   function handleAdd() {
+    if (!canCreate) {
+      return;
+    }
+
     setEditingFeature(null);
     setFormMode("create");
     setDraftGeometry(draftGeometry ?? draftPointGeometry(DEFAULT_COORDINATES));
@@ -204,6 +220,10 @@ export function FeaturesDashboard() {
   }
 
   function handleEdit(feature: SpatialFeature) {
+    if (!canEdit) {
+      return;
+    }
+
     setEditingFeature(feature);
     setFormMode("edit");
     setDraftGeometry(feature.geometry);
@@ -212,6 +232,10 @@ export function FeaturesDashboard() {
   }
 
   function handleDraftGeometryChange(geometry: SpatialGeometry | null, meta?: { finished?: boolean }) {
+    if (!canCreate) {
+      return;
+    }
+
     setDraftGeometry(geometry);
     if (geometry && meta?.finished && !formOpen) {
       setEditingFeature(null);
@@ -221,6 +245,10 @@ export function FeaturesDashboard() {
   }
 
   function handleDelete(feature: SpatialFeature) {
+    if (!canDeleteRecord(feature)) {
+      return;
+    }
+
     setDeleteTarget(feature);
   }
 
@@ -239,7 +267,15 @@ export function FeaturesDashboard() {
       return;
     }
 
+    if (!canDeleteRecord(deleteTarget)) {
+      return;
+    }
+
     deleteMutation.mutate(deleteTarget.id);
+  }
+
+  function canDeleteRecord(feature: SpatialFeature) {
+    return canDeleteFeature(user, feature, permissionFlags);
   }
 
   function closeDeleteDialog() {
@@ -252,7 +288,16 @@ export function FeaturesDashboard() {
 
   function handleSubmit(input: FeatureInput) {
     if (formMode === "edit" && editingFeature) {
+      if (!canEdit) {
+        return;
+      }
+
       updateMutation.mutate({ id: editingFeature.id, input });
+
+      return;
+    }
+
+    if (!canCreate) {
       return;
     }
 
@@ -266,6 +311,7 @@ export function FeaturesDashboard() {
       }
 
       setPage(1);
+
       return nextBBox;
     });
   }
@@ -286,7 +332,7 @@ export function FeaturesDashboard() {
           <h1 className="text-xl font-semibold tracking-normal">Mini Spatial Data Platform</h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
-          {user ? <UserMenu user={user} onLogout={logout} /> : null}
+          {user ? <UserMenu user={user} onLogout={logout} onSwitchRole={switchRole} /> : null}
         </div>
       </header>
 
@@ -304,8 +350,14 @@ export function FeaturesDashboard() {
         bboxEnabled={bboxEnabled}
         bbox={bbox}
         onBBoxEnabledChange={setBBoxEnabled}
+        canCreate={canCreate}
+        canSeed={canSeed}
         onAdd={handleAdd}
-        onSeed={() => seedMutation.mutate()}
+        onSeed={() => {
+          if (canSeed) {
+            seedMutation.mutate();
+          }
+        }}
         seedLoading={seedMutation.isPending}
       />
 
@@ -321,6 +373,8 @@ export function FeaturesDashboard() {
           pageSize={pageSize}
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           loading={featuresQuery.isFetching}
+          canEdit={canEdit}
+          canDeleteFeature={canDeleteRecord}
           onPageChange={setPage}
           onPageSizeChange={(nextPageSize) => {
             setPageSize(nextPageSize);
@@ -337,6 +391,9 @@ export function FeaturesDashboard() {
             focusRequestId={mapFocusRequestId}
             draftGeometry={draftGeometry}
             bboxEnabled={bboxEnabled}
+            canCreate={canCreate}
+            canEdit={canEdit}
+            canDeleteFeature={canDeleteRecord}
             onMapClick={handleMapClick}
             onDraftGeometryChange={handleDraftGeometryChange}
             onBoundsChange={handleBoundsChange}
@@ -383,5 +440,6 @@ function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
   }
+
   return "Please try again.";
 }

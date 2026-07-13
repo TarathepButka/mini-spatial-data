@@ -35,6 +35,11 @@ export type FeatureProperties = {
   th_time?: string;
   source?: string;
   sourceId?: string;
+  createdBy?: {
+    sub?: string;
+    email?: string;
+    name?: string;
+  };
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;

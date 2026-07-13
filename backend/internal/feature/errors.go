@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrNotFound   = errors.New("feature not found")
 	ErrValidation = errors.New("validation error")
+	ErrForbidden  = errors.New("forbidden")
 )
 
 type ValidationError struct {

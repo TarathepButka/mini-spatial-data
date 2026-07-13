@@ -30,6 +30,7 @@ export function validateGeometry(value: unknown): GeometryValidationResult {
     if (!Array.isArray(value.features) || value.features.length !== 1) {
       return { ok: false, error: "FeatureCollection paste must contain exactly one feature" };
     }
+
     return validateGeometry(value.features[0]);
   }
 
@@ -48,6 +49,7 @@ export function validateGeometry(value: unknown): GeometryValidationResult {
 export function geometrySummary(geometry: SpatialGeometry): string {
   if (geometry.type === "Point") {
     const [lng, lat] = geometry.coordinates;
+
     return `Point - ${lng.toFixed(5)}, ${lat.toFixed(5)}`;
   }
 
@@ -57,6 +59,7 @@ export function geometrySummary(geometry: SpatialGeometry): string {
 
   const vertices = geometry.coordinates.reduce((total, ring) => total + ring.length, 0);
   const ringText = geometry.coordinates.length === 1 ? "ring" : "rings";
+
   return `Polygon - ${geometry.coordinates.length} ${ringText}, ${vertices} vertices`;
 }
 
@@ -70,10 +73,12 @@ export function geometryCenter(geometry: SpatialGeometry): Position {
     (acc, [lng, lat]) => {
       acc.lng += lng;
       acc.lat += lat;
+
       return acc;
     },
     { lng: 0, lat: 0 },
   );
+
   return [totals.lng / positions.length, totals.lat / positions.length];
 }
 
@@ -93,6 +98,7 @@ export function geometryBounds(geometry: SpatialGeometry): BoundingBox {
       maxLat: Number.NEGATIVE_INFINITY,
     },
   );
+
   return [bounds.minLng, bounds.minLat, bounds.maxLng, bounds.maxLat];
 }
 
@@ -150,6 +156,7 @@ export function centerForTemplate(geometry: SpatialGeometry): Position {
     (acc, [lng, lat]) => {
       acc.lng += lng;
       acc.lat += lat;
+
       return acc;
     },
     { lng: 0, lat: 0 },
@@ -256,6 +263,7 @@ function removeConsecutiveDuplicatePositions(coordinates: Position[]): Position[
     }
 
     const previous = coordinates[index - 1];
+
     return previous[0] !== position[0] || previous[1] !== position[1];
   });
 }

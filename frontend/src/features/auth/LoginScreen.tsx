@@ -1,6 +1,5 @@
-import { LogIn, MapPinned } from "lucide-react";
+import { MapPinned } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../../components/ui/Button";
 import { appConfig } from "../../config/runtime";
 import { useAuth } from "./AuthContext";
 
@@ -35,7 +34,7 @@ declare global {
 const googleClientID = appConfig.googleClientID;
 
 export function LoginScreen({ loading }: { loading: boolean }) {
-  const { loginWithGoogle, continueLocalDemo } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -51,7 +50,9 @@ export function LoginScreen({ loading }: { loading: boolean }) {
         return;
       }
 
-      const nextWidth = Math.floor(buttonRef.current.getBoundingClientRect().width);
+      const nextWidth = Math.floor(
+        buttonRef.current.getBoundingClientRect().width,
+      );
       setButtonWidth(Math.min(360, Math.max(200, nextWidth)));
     };
 
@@ -70,12 +71,18 @@ export function LoginScreen({ loading }: { loading: boolean }) {
 
     if (window.google?.accounts.id) {
       setScriptReady(true);
+
       return;
     }
 
-    const existing = document.querySelector<HTMLScriptElement>("script[data-google-identity]");
+    const existing = document.querySelector<HTMLScriptElement>(
+      "script[data-google-identity]",
+    );
     if (existing) {
-      existing.addEventListener("load", () => setScriptReady(true), { once: true });
+      existing.addEventListener("load", () => setScriptReady(true), {
+        once: true,
+      });
+
       return;
     }
 
@@ -90,7 +97,12 @@ export function LoginScreen({ loading }: { loading: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!googleClientID || !scriptReady || !buttonRef.current || !window.google?.accounts.id) {
+    if (
+      !googleClientID ||
+      !scriptReady ||
+      !buttonRef.current ||
+      !window.google?.accounts.id
+    ) {
       return;
     }
 
@@ -101,8 +113,10 @@ export function LoginScreen({ loading }: { loading: boolean }) {
       callback: (response) => {
         if (!response.credential) {
           setError("Google did not return an ID token.");
+
           return;
         }
+
         loginWithGoogle(response.credential).catch((err: unknown) => {
           setError(err instanceof Error ? err.message : "Google login failed.");
         });
@@ -119,34 +133,40 @@ export function LoginScreen({ loading }: { loading: boolean }) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 py-10 text-zinc-950">
-      <section className="w-full max-w-[440px] rounded-md border border-zinc-200 bg-white px-6 py-7 shadow-xl sm:px-8 sm:py-8">
-        <div className="mx-auto grid w-full max-w-[360px] gap-6">
+      <section className="w-full max-w-110 rounded-md border border-zinc-200 bg-white px-6 py-7 shadow-xl sm:px-8 sm:py-8">
+        <div className="mx-auto grid w-full max-w-90 gap-6">
           <div className="flex items-center gap-4">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-zinc-950 text-white">
               <MapPinned size={22} />
             </div>
             <div className="min-w-0">
-              <h1 className="text-[21px] font-semibold leading-tight">Mini Spatial Data Platform</h1>
-              <p className="mt-1.5 text-sm leading-5 text-zinc-500">Sign in with Google to manage spatial records.</p>
+              <h1 className="text-[21px] font-semibold leading-tight">
+                Mini Spatial Data
+              </h1>
+              <p className="mt-1.5 text-sm leading-5 text-zinc-500">
+                Sign in with Google.
+              </p>
             </div>
           </div>
 
           {googleClientID ? (
             <div className="grid gap-3">
               <div ref={buttonRef} className="min-h-11 w-full" />
-              {(loading || (googleClientID && !scriptReady)) && <p className="text-sm text-zinc-500">Preparing Google login</p>}
+              {(loading || (googleClientID && !scriptReady)) && (
+                <p className="text-sm text-zinc-500">Preparing Google login</p>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              <p>Set `VITE_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` to enable Google login.</p>
-              <Button onClick={continueLocalDemo} variant="primary">
-                <LogIn size={17} />
-                Continue local demo
-              </Button>
+              <p>Set up environment variable to enable Google login.</p>
             </div>
           )}
 
-          {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
         </div>
       </section>
     </main>

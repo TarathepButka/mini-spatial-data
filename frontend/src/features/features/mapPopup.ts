@@ -3,6 +3,8 @@ import { geometrySummary } from "./geometry";
 import { featureCategory } from "./styles";
 
 export type FeaturePopupCallbacks = {
+  canEdit: boolean;
+  canDeleteFeature: (feature: SpatialFeature) => boolean;
   onEdit: (feature: SpatialFeature) => void;
   onDelete: (feature: SpatialFeature) => void;
 };
@@ -26,22 +28,32 @@ export function createPopup(feature: SpatialFeature, callbacksRef: { readonly cu
   meta.textContent = `${featureCategory(feature)} | ${geometrySummary(feature.geometry)}`;
   container.appendChild(meta);
 
+  const canDelete = callbacksRef.current.canDeleteFeature(feature);
+  if (!callbacksRef.current.canEdit && !canDelete) {
+    return container;
+  }
+
   const actions = document.createElement("div");
   actions.className = "mt-1 flex gap-2";
 
-  const editButton = document.createElement("button");
-  editButton.type = "button";
-  editButton.textContent = "Edit";
-  editButton.className = "rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700";
-  editButton.onclick = () => callbacksRef.current.onEdit(feature);
+  if (callbacksRef.current.canEdit) {
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.textContent = "Edit";
+    editButton.className = "rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700";
+    editButton.onclick = () => callbacksRef.current.onEdit(feature);
+    actions.append(editButton);
+  }
 
-  const deleteButton = document.createElement("button");
-  deleteButton.type = "button";
-  deleteButton.textContent = "Delete";
-  deleteButton.className = "rounded border border-red-200 px-2 py-1 text-xs text-red-600";
-  deleteButton.onclick = () => callbacksRef.current.onDelete(feature);
+  if (canDelete) {
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.className = "rounded border border-red-200 px-2 py-1 text-xs text-red-600";
+    deleteButton.onclick = () => callbacksRef.current.onDelete(feature);
+    actions.append(deleteButton);
+  }
 
-  actions.append(editButton, deleteButton);
   container.appendChild(actions);
 
   return container;

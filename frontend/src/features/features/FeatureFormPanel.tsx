@@ -56,6 +56,7 @@ export function FeatureFormPanel({
     if (!geometry) {
       setRawGeometry("");
       setGeometryError("");
+
       return;
     }
 
@@ -99,6 +100,7 @@ export function FeatureFormPanel({
     const result = parseGeometryInput(value);
     if (!result.ok) {
       setGeometryError(result.error);
+
       return;
     }
 

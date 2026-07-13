@@ -48,6 +48,7 @@ func (repository *Repository) EnsureIndexes(ctx context.Context) error {
 		},
 	}
 	_, err := repository.collection.Indexes().CreateMany(ctx, models)
+
 	return err
 }
 
@@ -67,12 +68,14 @@ func (repository *Repository) List(ctx context.Context, params ListParams) ([]Fe
 	if err != nil {
 		return nil, 0, err
 	}
+
 	defer cursor.Close(ctx)
 
 	documents := make([]FeatureDocument, 0)
 	if err := cursor.All(ctx, &documents); err != nil {
 		return nil, 0, err
 	}
+
 	return documents, total, nil
 }
 
@@ -93,12 +96,14 @@ func (repository *Repository) Nearby(ctx context.Context, params NearbyParams) (
 	if err != nil {
 		return nil, err
 	}
+
 	defer cursor.Close(ctx)
 
 	documents := make([]FeatureDocument, 0)
 	if err := cursor.All(ctx, &documents); err != nil {
 		return nil, err
 	}
+
 	return documents, nil
 }
 
@@ -107,13 +112,16 @@ func (repository *Repository) Get(ctx context.Context, id string) (FeatureDocume
 	if err != nil {
 		return FeatureDocument{}, ValidationError{Message: "invalid feature id"}
 	}
+
 	var document FeatureDocument
 	if err := repository.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&document); err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return FeatureDocument{}, ErrNotFound
 		}
+
 		return FeatureDocument{}, err
 	}
+
 	return document, nil
 }
 
@@ -122,11 +130,14 @@ func (repository *Repository) Create(ctx context.Context, document FeatureDocume
 	if document.ID.IsZero() {
 		document.ID = bson.NewObjectID()
 	}
+
 	if document.CreatedAt.IsZero() {
 		document.CreatedAt = now
 	}
+
 	document.UpdatedAt = now
 	_, err := repository.collection.InsertOne(ctx, document)
+
 	return document, err
 }
 
@@ -135,6 +146,7 @@ func (repository *Repository) Update(ctx context.Context, id string, document Fe
 	if err != nil {
 		return FeatureDocument{}, ValidationError{Message: "invalid feature id"}
 	}
+
 	now := time.Now().UTC()
 	document.UpdatedAt = now
 	document.Properties["updatedAt"] = now.Format(time.RFC3339)
@@ -159,8 +171,10 @@ func (repository *Repository) Update(ctx context.Context, id string, document Fe
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return FeatureDocument{}, ErrNotFound
 		}
+
 		return FeatureDocument{}, err
 	}
+
 	return updated, nil
 }
 
@@ -169,13 +183,16 @@ func (repository *Repository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return ValidationError{Message: "invalid feature id"}
 	}
+
 	result, err := repository.collection.DeleteOne(ctx, bson.M{"_id": objectID})
 	if err != nil {
 		return err
 	}
+
 	if result.DeletedCount == 0 {
 		return ErrNotFound
 	}
+
 	return nil
 }
 
@@ -185,18 +202,22 @@ func (repository *Repository) UpsertManyBySourceID(ctx context.Context, document
 		if strings.TrimSpace(document.SourceID) == "" {
 			continue
 		}
+
 		models = append(models, mongo.NewReplaceOneModel().
 			SetFilter(bson.M{"sourceId": document.SourceID}).
 			SetReplacement(document).
 			SetUpsert(true))
 	}
+
 	if len(models) == 0 {
 		return 0, nil
 	}
+
 	result, err := repository.collection.BulkWrite(ctx, models, options.BulkWrite().SetOrdered(false))
 	if err != nil {
 		return 0, err
 	}
+
 	return int(result.UpsertedCount + result.ModifiedCount), nil
 }
 
@@ -262,5 +283,6 @@ func splitParamList(raw string) []string {
 			items = append(items, item)
 		}
 	}
+
 	return items
 }

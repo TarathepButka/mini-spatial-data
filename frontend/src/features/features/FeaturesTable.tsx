@@ -15,6 +15,8 @@ type FeaturesTableProps = {
   pageSize: number;
   pageSizeOptions: number[];
   loading: boolean;
+  canEdit: boolean;
+  canDeleteFeature: (feature: SpatialFeature) => boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onFocus: (feature: SpatialFeature) => void;
@@ -31,6 +33,8 @@ export function FeaturesTable({
   pageSize,
   pageSizeOptions,
   loading,
+  canEdit,
+  canDeleteFeature,
   onPageChange,
   onPageSizeChange,
   onFocus,
@@ -82,30 +86,34 @@ export function FeaturesTable({
             >
               <LocateFixed size={16} />
             </IconButton>
-            <IconButton
-              title="Edit"
-              onClick={(event) => {
-                event.stopPropagation();
-                onEdit(row.original);
-              }}
-            >
-              <Pencil size={16} />
-            </IconButton>
-            <IconButton
-              title="Delete"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete(row.original);
-              }}
-              variant="danger"
-            >
-              <Trash2 size={16} />
-            </IconButton>
+            {canEdit ? (
+              <IconButton
+                title="Edit"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onEdit(row.original);
+                }}
+              >
+                <Pencil size={16} />
+              </IconButton>
+            ) : null}
+            {canDeleteFeature(row.original) ? (
+              <IconButton
+                title="Delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete(row.original);
+                }}
+                variant="danger"
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            ) : null}
           </div>
         ),
       }),
     ],
-    [onDelete, onEdit, onFocus],
+    [canDeleteFeature, canEdit, onDelete, onEdit, onFocus],
   );
 
   const table = useReactTable({ data: features, columns, getCoreRowModel: getCoreRowModel() });
@@ -205,6 +213,7 @@ function PageSizeDropdown({ value, options, onChange }: { value: number; options
       {({ close }) =>
         options.map((option) => {
           const active = option === value;
+
           return (
             <DropdownMenuItem key={option} role="menuitemradio" aria-checked={active} onClick={() => selectPageSize(option, close)}>
               <span>{option} per page</span>

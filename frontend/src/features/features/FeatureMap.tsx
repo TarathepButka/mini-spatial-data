@@ -26,6 +26,9 @@ type FeatureMapProps = {
   focusRequestId: number;
   draftGeometry: SpatialGeometry | null;
   bboxEnabled: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDeleteFeature: (feature: SpatialFeature) => boolean;
   onMapClick: (coordinates: [number, number]) => void;
   onDraftGeometryChange: (geometry: SpatialGeometry | null, meta?: { finished?: boolean }) => void;
   onBoundsChange: (bbox: BoundingBox) => void;
@@ -33,7 +36,10 @@ type FeatureMapProps = {
   onDelete: (feature: SpatialFeature) => void;
 };
 
-type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange"> & FeaturePopupCallbacks;
+type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange"> &
+  FeaturePopupCallbacks & {
+    canCreate: boolean;
+  };
 
 export function FeatureMap({
   features,
@@ -41,6 +47,9 @@ export function FeatureMap({
   focusRequestId,
   draftGeometry,
   bboxEnabled,
+  canCreate,
+  canEdit,
+  canDeleteFeature,
   onMapClick,
   onDraftGeometryChange,
   onBoundsChange,
@@ -60,10 +69,19 @@ export function FeatureMap({
   const loadingDraftRef = useRef(false);
   const drawGeometryJsonRef = useRef("");
   const lastHandledFocusRequestRef = useRef(0);
-  const callbacksRef = useRef<CallbackRefs>({ onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete });
+  const callbacksRef = useRef<CallbackRefs>({
+    canCreate,
+    canEdit,
+    canDeleteFeature,
+    onMapClick,
+    onDraftGeometryChange,
+    onBoundsChange,
+    onEdit,
+    onDelete,
+  });
 
   featuresRef.current = features;
-  callbacksRef.current = { onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete };
+  callbacksRef.current = { canCreate, canEdit, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -109,10 +127,15 @@ export function FeatureMap({
 
       if (ignoreNextMapClickRef.current) {
         ignoreNextMapClickRef.current = false;
+
         return;
       }
 
       if (drawModeRef.current !== "select") {
+        return;
+      }
+
+      if (!callbacksRef.current.canCreate) {
         return;
       }
 
@@ -260,6 +283,7 @@ export function FeatureMap({
 
     if (feature.geometry.type === "Point") {
       map.flyTo({ center: feature.geometry.coordinates, zoom: Math.max(map.getZoom(), 10), essential: true });
+
       return;
     }
 
@@ -381,23 +405,25 @@ export function FeatureMap({
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
-      <div className="absolute left-4 top-4 z-10 flex overflow-hidden rounded border border-zinc-200 bg-white shadow-sm">
-        <DrawButton active={drawMode === "select"} title="Select" onClick={() => setDrawMode("select")}>
-          <MousePointer2 size={16} />
-        </DrawButton>
-        <DrawButton active={drawMode === "point"} title="Draw point" onClick={() => setDrawMode("point")}>
-          <MapPin size={16} />
-        </DrawButton>
-        <DrawButton active={drawMode === "linestring"} title="Draw line. Double-click or press Enter to finish." onClick={() => setDrawMode("linestring")}>
-          <Route size={16} />
-        </DrawButton>
-        <DrawButton active={drawMode === "polygon"} title="Draw polygon" onClick={() => setDrawMode("polygon")}>
-          <Pentagon size={16} />
-        </DrawButton>
-        <DrawButton active={false} title="Clear draft" onClick={clearDraft} danger>
-          <Trash2 size={16} />
-        </DrawButton>
-      </div>
+      {canCreate ? (
+        <div className="absolute left-4 top-4 z-10 flex overflow-hidden rounded border border-zinc-200 bg-white shadow-sm">
+          <DrawButton active={drawMode === "select"} title="Select" onClick={() => setDrawMode("select")}>
+            <MousePointer2 size={16} />
+          </DrawButton>
+          <DrawButton active={drawMode === "point"} title="Draw point" onClick={() => setDrawMode("point")}>
+            <MapPin size={16} />
+          </DrawButton>
+          <DrawButton active={drawMode === "linestring"} title="Draw line. Double-click or press Enter to finish." onClick={() => setDrawMode("linestring")}>
+            <Route size={16} />
+          </DrawButton>
+          <DrawButton active={drawMode === "polygon"} title="Draw polygon" onClick={() => setDrawMode("polygon")}>
+            <Pentagon size={16} />
+          </DrawButton>
+          <DrawButton active={false} title="Clear draft" onClick={clearDraft} danger>
+            <Trash2 size={16} />
+          </DrawButton>
+        </div>
+      ) : null}
       {drawMode === "linestring" ? (
         <div className="absolute left-4 top-16 z-10 max-w-[calc(100%-2rem)] rounded border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm sm:max-w-md">
           {lineDrawHint}
@@ -413,6 +439,7 @@ function isEditableEventTarget(target: EventTarget | null) {
   }
 
   const tagName = target.tagName.toLowerCase();
+
   return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
 }
 
