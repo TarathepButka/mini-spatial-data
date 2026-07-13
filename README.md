@@ -69,6 +69,8 @@ Required in `backend/.env` for seeding:
 VALLARIS_API_KEY=your_api_key_here
 ```
 
+The seed endpoint also requires an authenticated `admin` user.
+
 Required for Google login:
 
 ```txt
@@ -93,7 +95,11 @@ http://localhost:5173
 
 `POST /api/v1/auth/google` verifies the Google ID token, sets an HttpOnly cookie, and returns only the user profile plus expiry metadata. The frontend sends cookies with `credentials: "include"` and does not store the app JWT in `localStorage`.
 
-Set `AUTH_REQUIRED=true` when you want create/update/delete/seed endpoints to require the HttpOnly session cookie. If `AUTH_REQUIRED=true`, `GOOGLE_CLIENT_ID` is set, or `APP_ENV=production`, the backend requires `AUTH_JWT_SECRET` to be a private value with at least 32 characters.
+Google users are stored in the MongoDB `users` collection. On startup, the backend runs an idempotent database seeder that grants `admin` and `user` roles to `tarathep.butka@gmail.com`. Other Google users receive the `user` role by default. A user can hold multiple roles, while the active `role` controls the current permission set. The `user` role has `read`, `create`, and `edit` permissions, plus delete access for records they created. The `admin` role has all permissions, including global `delete` and `seed`.
+
+Create, update, delete, and seed endpoints require the HttpOnly session cookie and check permissions at the API boundary. Read endpoints remain public unless `AUTH_REQUIRED=true`, which also requires `read` permission for list/get/nearby requests. `POST /api/v1/auth/role` switches the active role, validates it against the user's `roles`, and sets a fresh HttpOnly cookie. If `AUTH_REQUIRED=true`, `GOOGLE_CLIENT_ID` is set, or `APP_ENV=production`, the backend requires `AUTH_JWT_SECRET` to be a private value with at least 32 characters.
+
+The frontend stores the backend `permissions` response as UI flags. Delete controls are shown only for admins or for records owned by the current user, and Seed controls are shown only to users with `seed` permission. API permissions remain the source of truth.
 
 For cross-site production deployments, set `AUTH_COOKIE_SECURE=true` and `AUTH_COOKIE_SAME_SITE=none`. Keep `CORS_ALLOW_ORIGINS` scoped to explicit frontend origins; wildcard CORS is treated as public and does not allow credentialed cookie requests.
 
@@ -159,6 +165,7 @@ For the Docker frontend, `frontend/.env` is loaded at container startup and writ
 GET    /api/v1/health
 POST   /api/v1/auth/google
 GET    /api/v1/auth/me
+POST   /api/v1/auth/role
 POST   /api/v1/auth/logout
 GET    /api/v1/features?page=1&limit=20&search=&category=&province=&bbox=minLng,minLat,maxLng,maxLat
 GET    /api/v1/features/:id
@@ -277,7 +284,7 @@ npm run build
 
 ## Notes
 
-- `POST /api/v1/seed/vallaris` is disabled when `APP_ENV=production`.
+- `POST /api/v1/seed/vallaris` requires the `seed` permission, which is included in the `admin` role.
 - Seed failures return a fixed public error message. Detailed upstream errors are sanitized before logging so API keys are not exposed.
 - Map tiles are loaded from OpenStreetMap raster tiles, so the map needs internet access.
 - The submitted Vallaris dataset is hotspot/fire-detection data. The app normalizes it into GeoJSON feature records while preserving key properties such as hotspot id, confidence, FRP, province, amphoe, and timestamp.

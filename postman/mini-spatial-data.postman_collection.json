@@ -30,6 +30,18 @@
       "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" }
     },
     {
+      "name": "Switch Active Role - Uses Cookie",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/role",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"user\"\n}"
+        }
+      }
+    },
+    {
       "name": "Logout - Clears Cookie",
       "request": { "method": "POST", "url": "{{baseUrl}}/auth/logout" }
     },
