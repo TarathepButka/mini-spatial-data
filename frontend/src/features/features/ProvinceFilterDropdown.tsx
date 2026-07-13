@@ -34,6 +34,7 @@ export function ProvinceFilterDropdown({ province, provinceOptions, onChange }: 
 
           {provinceOptions.map((option) => {
             const active = province === option;
+
             return (
               <DropdownMenuItem key={option} role="menuitemradio" aria-checked={active} onClick={() => selectProvince(option, close)}>
                 <span className="truncate">{option}</span>

@@ -31,5 +31,6 @@ function stringToColor(value: string): string {
   }
 
   const hue = Math.abs(hash) % 360;
+
   return `hsl(${hue} 65% 45%)`;
 }

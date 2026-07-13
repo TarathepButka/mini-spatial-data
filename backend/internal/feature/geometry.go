@@ -14,18 +14,21 @@ func NormalizeGeometry(geometry Geometry) (Geometry, error) {
 		if err != nil {
 			return Geometry{}, err
 		}
+
 		return Geometry{Type: GeometryTypePoint, Coordinates: coordinates}, nil
 	case GeometryTypeLineString:
 		coordinates, err := lineStringCoordinates(geometry.Coordinates)
 		if err != nil {
 			return Geometry{}, err
 		}
+
 		return Geometry{Type: GeometryTypeLineString, Coordinates: coordinates}, nil
 	case GeometryTypePolygon:
 		coordinates, err := polygonCoordinates(geometry.Coordinates)
 		if err != nil {
 			return Geometry{}, err
 		}
+
 		return Geometry{Type: GeometryTypePolygon, Coordinates: coordinates}, nil
 	default:
 		return Geometry{}, ValidationError{Message: "geometry.type must be Point, LineString, or Polygon"}
@@ -36,6 +39,7 @@ func PointCoordinates(geometry Geometry) ([]float64, error) {
 	if strings.TrimSpace(geometry.Type) != GeometryTypePoint {
 		return nil, ValidationError{Message: "geometry.type must be Point"}
 	}
+
 	return pointCoordinates(geometry.Coordinates)
 }
 
@@ -44,6 +48,7 @@ func pointCoordinates(raw any) ([]float64, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return parsePosition(normalized, "geometry.coordinates must contain longitude and latitude")
 }
 
@@ -52,6 +57,7 @@ func lineStringCoordinates(raw any) ([][]float64, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	items, ok := normalized.([]any)
 	if !ok || len(items) < 2 {
 		return nil, ValidationError{Message: "LineString coordinates must contain at least two positions"}
@@ -63,12 +69,14 @@ func lineStringCoordinates(raw any) ([][]float64, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		coordinates = append(coordinates, position)
 	}
 	coordinates = removeConsecutiveDuplicatePositions(coordinates)
 	if len(coordinates) < 2 {
 		return nil, ValidationError{Message: "LineString coordinates must contain at least two distinct positions"}
 	}
+
 	return coordinates, nil
 }
 
@@ -77,6 +85,7 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	ringItems, ok := normalized.([]any)
 	if !ok || len(ringItems) == 0 {
 		return nil, ValidationError{Message: "Polygon coordinates must contain at least one linear ring"}
@@ -95,6 +104,7 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			ring = append(ring, position)
 		}
 
@@ -103,8 +113,10 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 		if first[0] != last[0] || first[1] != last[1] {
 			return nil, ValidationError{Message: "Polygon linear rings must be closed"}
 		}
+
 		polygon = append(polygon, ring)
 	}
+
 	return polygon, nil
 }
 
@@ -118,6 +130,7 @@ func normalizeCoordinateValue(raw any, message string) (any, error) {
 	if err := json.Unmarshal(payload, &normalized); err != nil {
 		return nil, ValidationError{Message: message}
 	}
+
 	return normalized, nil
 }
 
@@ -131,13 +144,16 @@ func parsePosition(raw any, message string) ([]float64, error) {
 	if !ok {
 		return nil, ValidationError{Message: "longitude must be a valid number"}
 	}
+
 	lat, ok := finiteNumber(items[1])
 	if !ok {
 		return nil, ValidationError{Message: "latitude must be a valid number"}
 	}
+
 	if err := validateLngLat(lng, lat); err != nil {
 		return nil, err
 	}
+
 	return []float64{lng, lat}, nil
 }
 
@@ -146,6 +162,7 @@ func finiteNumber(value any) (float64, bool) {
 	if !ok || math.IsNaN(number) || math.IsInf(number, 0) {
 		return 0, false
 	}
+
 	return number, true
 }
 
@@ -156,10 +173,12 @@ func removeConsecutiveDuplicatePositions(coordinates [][]float64) [][]float64 {
 			filtered = append(filtered, coordinate)
 			continue
 		}
+
 		previous := coordinates[index-1]
 		if previous[0] != coordinate[0] || previous[1] != coordinate[1] {
 			filtered = append(filtered, coordinate)
 		}
 	}
+
 	return filtered
 }

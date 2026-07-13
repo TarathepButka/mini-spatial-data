@@ -18,9 +18,11 @@ func TestNewListParamsParsesPaginationAndBBox(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected params, got error: %v", err)
 	}
+
 	if params.Page != 2 || params.Limit != 25 {
 		t.Fatalf("unexpected pagination: %#v", params)
 	}
+
 	if params.BBox == nil || params.BBox.MinLng != 99.5 || params.BBox.MaxLat != 15.4 {
 		t.Fatalf("unexpected bbox: %#v", params.BBox)
 	}
@@ -43,6 +45,7 @@ func TestNewNearbyParamsValidatesRadius(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nearby params, got error: %v", err)
 	}
+
 	if params.Lng != 100.5 || params.Lat != 13.7 || params.Radius != 5000 {
 		t.Fatalf("unexpected params: %#v", params)
 	}

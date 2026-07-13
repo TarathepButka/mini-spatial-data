@@ -16,6 +16,7 @@ func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 			allowAll = true
 			continue
 		}
+
 		if origin != "" {
 			allowed[origin] = struct{}{}
 		}
@@ -30,15 +31,18 @@ func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 		} else if allowAll && origin != "" {
 			c.Header("Access-Control-Allow-Origin", "*")
 		}
+
 		c.Header("Vary", "Origin")
 		if allowCredentials {
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
+
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
+
 			return
 		}
 
