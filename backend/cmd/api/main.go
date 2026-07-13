@@ -26,10 +26,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	client, collection, err := database.Connect(ctx, cfg)
+	client, mongoDatabase, err := database.Connect(ctx, cfg)
 	if err != nil {
 		log.Fatalf("connect database: %v", err)
 	}
+
 	defer func() {
 		disconnectCtx, disconnectCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer disconnectCancel()
@@ -38,15 +39,24 @@ func main() {
 		}
 	}()
 
-	featureRepository := feature.NewRepository(collection)
+	featureRepository := feature.NewRepository(mongoDatabase.Collection(cfg.MongoCollection))
 	if err := featureRepository.EnsureIndexes(ctx); err != nil {
-		log.Fatalf("ensure indexes: %v", err)
+		log.Fatalf("ensure feature indexes: %v", err)
+	}
+
+	authRepository := auth.NewRepository(mongoDatabase.Collection(cfg.MongoUsersCollection))
+	if err := authRepository.EnsureIndexes(ctx); err != nil {
+		log.Fatalf("ensure auth indexes: %v", err)
+	}
+
+	if err := authRepository.SeedUsers(ctx, auth.DefaultSeedUsers); err != nil {
+		log.Fatalf("seed auth users: %v", err)
 	}
 
 	featureService := feature.NewService(featureRepository)
 	featureHandler := feature.NewHandler(featureService)
 	seedHandler := seed.NewHandler(cfg, featureService)
-	authService := auth.NewService(cfg)
+	authService := auth.NewService(cfg, authRepository)
 	authHandler := auth.NewHandler(cfg, authService)
 
 	router := apihttp.NewRouter(cfg, authHandler, featureHandler, seedHandler)
