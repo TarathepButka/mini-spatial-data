@@ -19,6 +19,8 @@ var (
 	ErrRoleNotAllowed  = errors.New("role is not available for this user")
 )
 
+const jwtIssuer = "mini-spatial-data"
+
 type Service struct {
 	googleClientID string
 	jwtSecret      []byte
@@ -86,7 +88,7 @@ func (service *Service) IssueToken(user User) (AuthResponse, error) {
 		User: user,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.Subject,
-			Issuer:    "mini-spatial-data",
+			Issuer:    jwtIssuer,
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 		},
@@ -118,7 +120,7 @@ func (service *Service) ParseToken(ctx context.Context, rawToken string) (User, 
 		}
 
 		return service.jwtSecret, nil
-	}, jwt.WithIssuer("mini-spatial-data"))
+	}, jwt.WithIssuer(jwtIssuer))
 	if err != nil || !token.Valid {
 		return User{}, ErrInvalidToken
 	}

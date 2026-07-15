@@ -1,21 +1,12 @@
 package feature
 
-import "errors"
+import "github.com/example/mini-spatial-data/backend/internal/shared/api"
 
 var (
-	ErrNotFound   = errors.New("feature not found")
-	ErrValidation = errors.New("validation error")
-	ErrForbidden  = errors.New("forbidden")
+	ErrNotFound   = api.ErrNotFound
+	ErrValidation = api.ErrValidation
+	ErrForbidden  = api.ErrForbidden
 )
 
-type ValidationError struct {
-	Message string
-}
+type ValidationError = api.ValidationError
 
-func (err ValidationError) Error() string {
-	return err.Message
-}
-
-func (err ValidationError) Is(target error) bool {
-	return target == ErrValidation
-}

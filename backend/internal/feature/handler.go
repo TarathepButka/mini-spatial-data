@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/example/mini-spatial-data/backend/internal/auth"
+	"github.com/example/mini-spatial-data/backend/internal/shared/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -42,6 +43,10 @@ func (handler *Handler) List(c *gin.Context) {
 		writeError(c, err)
 
 		return
+	}
+
+	if actor := actorFromRequest(c); actor != nil {
+		_ = handler.service.EnsureSeededForUser(c.Request.Context(), actor)
 	}
 
 	response, err := handler.service.List(c.Request.Context(), params)
@@ -102,6 +107,13 @@ func (handler *Handler) Create(c *gin.Context) {
 }
 
 func (handler *Handler) Update(c *gin.Context) {
+	user, ok := auth.UserFromContext(c)
+	if !ok {
+		api.SendError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
+
+		return
+	}
+
 	var input FeatureInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		writeError(c, ValidationError{Message: "request body must be a valid GeoJSON Feature"})
@@ -109,7 +121,18 @@ func (handler *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	feature, err := handler.service.Update(c.Request.Context(), c.Param("id"), input)
+	var (
+		feature Feature
+		err     error
+	)
+	if user.HasPermission(auth.PermissionDelete) {
+		// Admin: can edit any record
+		feature, err = handler.service.Update(c.Request.Context(), c.Param("id"), input)
+	} else {
+		// Regular user: can only edit own records
+		feature, err = handler.service.UpdateOwn(c.Request.Context(), c.Param("id"), input, actorFromUser(user))
+	}
+
 	if err != nil {
 		writeError(c, err)
 
@@ -122,7 +145,7 @@ func (handler *Handler) Update(c *gin.Context) {
 func (handler *Handler) Delete(c *gin.Context) {
 	user, ok := auth.UserFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: ErrorBody{Code: "unauthorized", Message: "authentication is required"}})
+		api.SendError(c, http.StatusUnauthorized, "unauthorized", "authentication is required")
 
 		return
 	}
@@ -179,7 +202,7 @@ func writeError(c *gin.Context, err error) {
 		message = "permission denied"
 	}
 
-	c.JSON(status, ErrorResponse{Error: ErrorBody{Code: code, Message: message}})
+	api.SendError(c, status, code, message)
 }
 
 func withMiddleware(middleware gin.HandlerFunc, handler gin.HandlerFunc) []gin.HandlerFunc {

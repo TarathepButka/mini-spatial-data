@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/example/mini-spatial-data/backend/internal/feature"
+	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
 )
 
 func TestNormalizeVallarisFeature(t *testing.T) {
 	document, err := NormalizeVallarisFeature(
 		"source-1",
-		feature.Geometry{Type: "Point", Coordinates: []float64{100.19614, 14.59946}},
+		geo.Geometry{Type: "Point", Coordinates: []float64{100.19614, 14.59946}},
 		map[string]any{
 			"pv_en":      "Suphan Buri",
 			"ap_en":      "Si Prachan",

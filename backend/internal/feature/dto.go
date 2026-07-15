@@ -1,5 +1,8 @@
 package feature
 
+import "github.com/example/mini-spatial-data/backend/internal/shared/api"
+
+
 type FeatureInput struct {
 	Type       string         `json:"type"`
 	Geometry   Geometry       `json:"geometry"`
@@ -45,11 +48,8 @@ type DeleteResponse struct {
 	Deleted bool `json:"deleted"`
 }
 
-type ErrorBody struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
 
-type ErrorResponse struct {
-	Error ErrorBody `json:"error"`
-}
+
+type ErrorBody = api.ErrorBody
+type ErrorResponse = api.ErrorResponse
+

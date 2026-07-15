@@ -1,6 +1,10 @@
 package auth
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/example/mini-spatial-data/backend/internal/shared/api"
+)
 
 type GoogleLoginRequest struct {
 	Credential string `json:"credential"`
@@ -44,14 +48,8 @@ type AuthResponse struct {
 	User      User   `json:"user"`
 }
 
-type ErrorBody struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-type ErrorResponse struct {
-	Error ErrorBody `json:"error"`
-}
+type ErrorBody = api.ErrorBody
+type ErrorResponse = api.ErrorResponse
 
 func NormalizeRole(role Role) Role {
 	normalized, ok := ParseRole(role)

@@ -14,7 +14,49 @@ import (
 
 	"github.com/example/mini-spatial-data/backend/internal/config"
 	"github.com/example/mini-spatial-data/backend/internal/feature"
+	"github.com/example/mini-spatial-data/backend/internal/shared/api"
+	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	DefaultImportLimit = 100
+	MaxImportLimit     = 500
+
+	KeyProvinceTH = "pv_tn"
+	KeyProvinceEN = "pv_en"
+	KeyChangwat   = "changwat"
+	KeyProvinceT  = "province_t"
+	KeyAmphoeTH   = "ap_tn"
+	KeyAmphoeEN   = "ap_en"
+	KeyAmphoe     = "amphoe"
+	KeyTambolTH   = "tb_tn"
+	KeyTambolEN   = "tb_en"
+	KeyTambol     = "tambol"
+	KeyTambonT    = "tambon_t"
+	KeyVillage    = "village"
+	KeyName1      = "name_1"
+	KeyConfidence = "confidence"
+	KeyHotspotID  = "hotspotid"
+	KeyCtEN       = "ct_en"
+	KeyCtTN       = "ct_tn"
+	KeyLuHp       = "lu_hp"
+	KeyLuHpName   = "lu_hp_name"
+	KeyLuName     = "lu_name"
+	KeyThDate     = "th_date"
+	KeyThTime     = "th_time"
+	KeyAcqDate    = "acq_date"
+	KeyAcqTime    = "acq_time"
+	KeyFRP        = "frp"
+	KeyBrightTi4  = "bright_ti4"
+	KeyBrightTi5  = "bright_ti5"
+	KeySatellite  = "satellite"
+	KeyInstrument = "instrument"
+	KeyTimestamp  = "timestamp"
+	KeyLinkGMap   = "linkgmap"
+	KeyScan       = "scan"
+	KeyTrack      = "track"
+	KeyVersion    = "version"
 )
 
 type Handler struct {
@@ -39,10 +81,10 @@ type vallarisResponse struct {
 }
 
 type vallarisFeature struct {
-	ID         string           `json:"id"`
-	Type       string           `json:"type"`
-	Geometry   feature.Geometry `json:"geometry"`
-	Properties map[string]any   `json:"properties"`
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Geometry   geo.Geometry   `json:"geometry"`
+	Properties map[string]any `json:"properties"`
 }
 
 func NewHandler(cfg config.Config, featureService *feature.Service) *Handler {
@@ -68,7 +110,7 @@ func RegisterRoutes(router gin.IRouter, handler *Handler, requireSeedPermission 
 
 func (handler *Handler) SeedVallaris(c *gin.Context) {
 	if strings.TrimSpace(handler.cfg.VallarisAPIKey) == "" {
-		c.JSON(http.StatusBadRequest, feature.ErrorResponse{Error: feature.ErrorBody{Code: "missing_api_key", Message: "VALLARIS_API_KEY is required"}})
+		api.SendError(c, http.StatusBadRequest, "missing_api_key", "VALLARIS_API_KEY is required")
 
 		return
 	}
@@ -76,7 +118,7 @@ func (handler *Handler) SeedVallaris(c *gin.Context) {
 	result, err := handler.ImportVallaris(c.Request.Context())
 	if err != nil {
 		log.Printf("seed Vallaris failed: %s", sanitizeExternalError(err, handler.cfg.VallarisAPIKey))
-		c.JSON(http.StatusBadGateway, feature.ErrorResponse{Error: feature.ErrorBody{Code: "seed_failed", Message: "failed to import Vallaris data"}})
+		api.SendError(c, http.StatusBadGateway, "seed_failed", "failed to import Vallaris data")
 
 		return
 	}
@@ -86,8 +128,8 @@ func (handler *Handler) SeedVallaris(c *gin.Context) {
 
 func (handler *Handler) ImportVallaris(ctx context.Context) (ImportResult, error) {
 	limit := handler.cfg.VallarisImportLimit
-	if limit <= 0 || limit > 500 {
-		limit = 100
+	if limit <= 0 || limit > MaxImportLimit {
+		limit = DefaultImportLimit
 	}
 
 	result := ImportResult{}
@@ -185,36 +227,36 @@ func sanitizeExternalError(err error, apiKey string) string {
 	return apiKeyQueryPattern.ReplaceAllString(message, `${1}[redacted]`)
 }
 
-func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, properties map[string]any, now time.Time) (feature.FeatureDocument, error) {
+func NormalizeVallarisFeature(sourceID string, geometry geo.Geometry, properties map[string]any, now time.Time) (feature.FeatureDocument, error) {
 	if strings.TrimSpace(sourceID) == "" {
 		return feature.FeatureDocument{}, fmt.Errorf("source id is required")
 	}
 
-	coordinates, err := feature.PointCoordinates(geometry)
+	coordinates, err := geo.PointCoordinates(geometry)
 	if err != nil {
 		return feature.FeatureDocument{}, fmt.Errorf("only Point geometry is supported")
 	}
 
-	geometry = feature.Geometry{Type: feature.GeometryTypePoint, Coordinates: coordinates}
+	geometry = geo.Geometry{Type: geo.GeometryTypePoint, Coordinates: coordinates}
 
-	province := firstString(properties, "pv_tn", "changwat", "province_t", "pv_en")
-	amphoe := firstString(properties, "ap_tn", "amphoe", "ap_en")
-	tambol := firstString(properties, "tb_tn", "tambol", "tambon_t", "tb_en")
-	village := firstString(properties, "village", "name_1")
-	confidence := firstString(properties, "confidence")
+	province := firstString(properties, KeyProvinceTH, KeyChangwat, KeyProvinceT, KeyProvinceEN)
+	amphoe := firstString(properties, KeyAmphoeTH, KeyAmphoe, KeyAmphoeEN)
+	tambol := firstString(properties, KeyTambolTH, KeyTambol, KeyTambonT, KeyTambolEN)
+	village := firstString(properties, KeyVillage, KeyName1)
+	confidence := firstString(properties, KeyConfidence)
 	if confidence == "" {
 		confidence = "unknown"
 	}
 
 	location := compactJoin(" / ", province, amphoe, tambol)
 	if location == "" {
-		location = firstString(properties, "hotspotid", "ct_en")
+		location = firstString(properties, KeyHotspotID, KeyCtEN)
 	}
 
 	name := strings.TrimSpace("Hotspot - " + location)
-	landUse := firstString(properties, "lu_hp_name", "lu_name")
-	date := firstString(properties, "th_date", "acq_date")
-	timeText := firstString(properties, "th_time", "acq_time")
+	landUse := firstString(properties, KeyLuHpName, KeyLuName)
+	date := firstString(properties, KeyThDate, KeyAcqDate)
+	timeText := firstString(properties, KeyThTime, KeyAcqTime)
 	description := strings.TrimSpace(compactJoin(" ", "VIIRS hotspot", location, date, timeText))
 
 	normalized := map[string]any{
@@ -236,10 +278,10 @@ func NormalizeVallarisFeature(sourceID string, geometry feature.Geometry, proper
 	}
 
 	preservedKeys := []string{
-		"hotspotid", "frp", "bright_ti4", "bright_ti5", "satellite", "instrument",
-		"th_date", "th_time", "acq_date", "acq_time", "timestamp", "linkgmap",
-		"ct_en", "ct_tn", "pv_en", "pv_tn", "ap_en", "ap_tn", "tb_en", "tb_tn",
-		"lu_hp", "lu_hp_name", "lu_name", "scan", "track", "version",
+		KeyHotspotID, KeyFRP, KeyBrightTi4, KeyBrightTi5, KeySatellite, KeyInstrument,
+		KeyThDate, KeyThTime, KeyAcqDate, KeyAcqTime, KeyTimestamp, KeyLinkGMap,
+		KeyCtEN, KeyCtTN, KeyProvinceEN, KeyProvinceTH, KeyAmphoeEN, KeyAmphoeTH, KeyTambolEN, KeyTambolTH,
+		KeyLuHp, KeyLuHpName, KeyLuName, KeyScan, KeyTrack, KeyVersion,
 	}
 	for _, key := range preservedKeys {
 		if value, ok := properties[key]; ok && value != nil {

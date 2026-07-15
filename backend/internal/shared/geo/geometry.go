@@ -1,10 +1,24 @@
-package feature
+package geo
 
 import (
 	"encoding/json"
 	"math"
 	"strings"
+
+	"github.com/example/mini-spatial-data/backend/internal/shared/api"
 )
+
+const (
+	FeatureType            = "Feature"
+	GeometryTypePoint      = "Point"
+	GeometryTypeLineString = "LineString"
+	GeometryTypePolygon    = "Polygon"
+)
+
+type Geometry struct {
+	Type        string `json:"type" bson:"type"`
+	Coordinates any    `json:"coordinates" bson:"coordinates"`
+}
 
 func NormalizeGeometry(geometry Geometry) (Geometry, error) {
 	geometryType := strings.TrimSpace(geometry.Type)
@@ -31,13 +45,13 @@ func NormalizeGeometry(geometry Geometry) (Geometry, error) {
 
 		return Geometry{Type: GeometryTypePolygon, Coordinates: coordinates}, nil
 	default:
-		return Geometry{}, ValidationError{Message: "geometry.type must be Point, LineString, or Polygon"}
+		return Geometry{}, api.ValidationError{Message: "geometry.type must be Point, LineString, or Polygon"}
 	}
 }
 
 func PointCoordinates(geometry Geometry) ([]float64, error) {
 	if strings.TrimSpace(geometry.Type) != GeometryTypePoint {
-		return nil, ValidationError{Message: "geometry.type must be Point"}
+		return nil, api.ValidationError{Message: "geometry.type must be Point"}
 	}
 
 	return pointCoordinates(geometry.Coordinates)
@@ -60,7 +74,7 @@ func lineStringCoordinates(raw any) ([][]float64, error) {
 
 	items, ok := normalized.([]any)
 	if !ok || len(items) < 2 {
-		return nil, ValidationError{Message: "LineString coordinates must contain at least two positions"}
+		return nil, api.ValidationError{Message: "LineString coordinates must contain at least two positions"}
 	}
 
 	coordinates := make([][]float64, 0, len(items))
@@ -74,7 +88,7 @@ func lineStringCoordinates(raw any) ([][]float64, error) {
 	}
 	coordinates = removeConsecutiveDuplicatePositions(coordinates)
 	if len(coordinates) < 2 {
-		return nil, ValidationError{Message: "LineString coordinates must contain at least two distinct positions"}
+		return nil, api.ValidationError{Message: "LineString coordinates must contain at least two distinct positions"}
 	}
 
 	return coordinates, nil
@@ -88,14 +102,14 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 
 	ringItems, ok := normalized.([]any)
 	if !ok || len(ringItems) == 0 {
-		return nil, ValidationError{Message: "Polygon coordinates must contain at least one linear ring"}
+		return nil, api.ValidationError{Message: "Polygon coordinates must contain at least one linear ring"}
 	}
 
 	polygon := make([][][]float64, 0, len(ringItems))
 	for _, ringItem := range ringItems {
 		rawPositions, ok := ringItem.([]any)
 		if !ok || len(rawPositions) < 4 {
-			return nil, ValidationError{Message: "Polygon linear rings must contain at least four positions"}
+			return nil, api.ValidationError{Message: "Polygon linear rings must contain at least four positions"}
 		}
 
 		ring := make([][]float64, 0, len(rawPositions))
@@ -111,7 +125,7 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 		first := ring[0]
 		last := ring[len(ring)-1]
 		if first[0] != last[0] || first[1] != last[1] {
-			return nil, ValidationError{Message: "Polygon linear rings must be closed"}
+			return nil, api.ValidationError{Message: "Polygon linear rings must be closed"}
 		}
 
 		polygon = append(polygon, ring)
@@ -123,12 +137,12 @@ func polygonCoordinates(raw any) ([][][]float64, error) {
 func normalizeCoordinateValue(raw any, message string) (any, error) {
 	payload, err := json.Marshal(raw)
 	if err != nil {
-		return nil, ValidationError{Message: message}
+		return nil, api.ValidationError{Message: message}
 	}
 
 	var normalized any
 	if err := json.Unmarshal(payload, &normalized); err != nil {
-		return nil, ValidationError{Message: message}
+		return nil, api.ValidationError{Message: message}
 	}
 
 	return normalized, nil
@@ -137,20 +151,20 @@ func normalizeCoordinateValue(raw any, message string) (any, error) {
 func parsePosition(raw any, message string) ([]float64, error) {
 	items, ok := raw.([]any)
 	if !ok || len(items) != 2 {
-		return nil, ValidationError{Message: message}
+		return nil, api.ValidationError{Message: message}
 	}
 
 	lng, ok := finiteNumber(items[0])
 	if !ok {
-		return nil, ValidationError{Message: "longitude must be a valid number"}
+		return nil, api.ValidationError{Message: "longitude must be a valid number"}
 	}
 
 	lat, ok := finiteNumber(items[1])
 	if !ok {
-		return nil, ValidationError{Message: "latitude must be a valid number"}
+		return nil, api.ValidationError{Message: "latitude must be a valid number"}
 	}
 
-	if err := validateLngLat(lng, lat); err != nil {
+	if err := ValidateLngLat(lng, lat); err != nil {
 		return nil, err
 	}
 
@@ -181,4 +195,16 @@ func removeConsecutiveDuplicatePositions(coordinates [][]float64) [][]float64 {
 	}
 
 	return filtered
+}
+
+func ValidateLngLat(lng float64, lat float64) error {
+	if lng < -180 || lng > 180 {
+		return api.ValidationError{Message: "longitude must be between -180 and 180"}
+	}
+
+	if lat < -90 || lat > 90 {
+		return api.ValidationError{Message: "latitude must be between -90 and 90"}
+	}
+
+	return nil
 }

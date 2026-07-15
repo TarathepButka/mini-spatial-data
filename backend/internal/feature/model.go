@@ -3,20 +3,19 @@ package feature
 import (
 	"time"
 
+	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 const (
-	FeatureType            = "Feature"
-	GeometryTypePoint      = "Point"
-	GeometryTypeLineString = "LineString"
-	GeometryTypePolygon    = "Polygon"
+	FeatureType            = geo.FeatureType
+	GeometryTypePoint      = geo.GeometryTypePoint
+	GeometryTypeLineString = geo.GeometryTypeLineString
+	GeometryTypePolygon    = geo.GeometryTypePolygon
 )
 
-type Geometry struct {
-	Type        string `json:"type" bson:"type"`
-	Coordinates any    `json:"coordinates" bson:"coordinates"`
-}
+type Geometry = geo.Geometry
+
 
 type Feature struct {
 	ID         string         `json:"id"`

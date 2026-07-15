@@ -196,6 +196,13 @@ func (repository *Repository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (repository *Repository) CountByUser(ctx context.Context, email string) (int64, error) {
+	if strings.TrimSpace(email) == "" {
+		return 0, nil
+	}
+	return repository.collection.CountDocuments(ctx, bson.M{"createdBy.email": email})
+}
+
 func (repository *Repository) UpsertManyBySourceID(ctx context.Context, documents []FeatureDocument) (int, error) {
 	models := make([]mongo.WriteModel, 0, len(documents))
 	for _, document := range documents {

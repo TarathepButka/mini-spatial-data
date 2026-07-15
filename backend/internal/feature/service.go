@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
 )
 
 type Service struct {
@@ -113,6 +115,34 @@ func (service *Service) Update(ctx context.Context, id string, input FeatureInpu
 	return updated.ToFeature(), nil
 }
 
+func (service *Service) UpdateOwn(ctx context.Context, id string, input FeatureInput, actor *Actor) (Feature, error) {
+	if actor == nil {
+		return Feature{}, ErrForbidden
+	}
+
+	existing, err := service.repository.Get(ctx, id)
+	if err != nil {
+		return Feature{}, err
+	}
+
+	if !sameActor(existing.CreatedBy, actor) {
+		return Feature{}, ErrForbidden
+	}
+
+	now := service.now()
+	document, err := NormalizeInput(input, now)
+	if err != nil {
+		return Feature{}, err
+	}
+
+	updated, err := service.repository.Update(ctx, id, document)
+	if err != nil {
+		return Feature{}, err
+	}
+
+	return updated.ToFeature(), nil
+}
+
 func (service *Service) Delete(ctx context.Context, id string) error {
 	return service.repository.Delete(ctx, id)
 }
@@ -134,6 +164,98 @@ func (service *Service) DeleteOwn(ctx context.Context, id string, actor *Actor) 
 	return service.repository.Delete(ctx, id)
 }
 
+func (service *Service) EnsureSeededForUser(ctx context.Context, actor *Actor) error {
+	if actor == nil || strings.TrimSpace(actor.Email) == "" {
+		return nil
+	}
+
+	count, err := service.repository.CountByUser(ctx, actor.Email)
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return nil
+	}
+
+	samples := []FeatureDocument{
+		{
+			Type: FeatureType,
+			Geometry: Geometry{
+				Type:        GeometryTypePoint,
+				Coordinates: []float64{100.5018, 13.7563},
+			},
+			Properties: map[string]any{
+				"name":        "จุดเฝ้าระวังของฉัน - กรุงเทพฯ",
+				"category":    "manual",
+				"province":    "กรุงเทพมหานคร",
+				"description": "จุดสังเกตการณ์ที่ปักโดยระบบอัตโนมัติสำหรับบัญชีใหม่",
+			},
+		},
+		{
+			Type: FeatureType,
+			Geometry: Geometry{
+				Type:        GeometryTypePoint,
+				Coordinates: []float64{98.9853, 18.7883},
+			},
+			Properties: map[string]any{
+				"name":        "จุดตรวจแนวป้องกันไฟ - เชียงใหม่",
+				"category":    "manual",
+				"province":    "เชียงใหม่",
+				"description": "จุดตรวจเช็คแนวกันไฟป่า ภาคเหนือตอนบน",
+			},
+		},
+		{
+			Type: FeatureType,
+			Geometry: Geometry{
+				Type:        GeometryTypePoint,
+				Coordinates: []float64{102.8236, 16.4322},
+			},
+			Properties: map[string]any{
+				"name":        "จุดประสานงานดับไฟ - ขอนแก่น",
+				"category":    "manual",
+				"province":    "ขอนแก่น",
+				"description": "จุดตรวจสอบภูมิภาคตะวันออกเฉียงเหนือ",
+			},
+		},
+		{
+			Type: FeatureType,
+			Geometry: Geometry{
+				Type:        GeometryTypePoint,
+				Coordinates: []float64{98.3923, 7.8804},
+			},
+			Properties: map[string]any{
+				"name":        "สถานีวิทยุสื่อสาร - ภูเก็ต",
+				"category":    "manual",
+				"province":    "ภูเก็ต",
+				"description": "สถานีประสานงานกู้ภัยจังหวัดภูเก็ต",
+			},
+		},
+		{
+			Type: FeatureType,
+			Geometry: Geometry{
+				Type:        GeometryTypePoint,
+				Coordinates: []float64{99.8406, 19.9090},
+			},
+			Properties: map[string]any{
+				"name":        "ด่านตรวจร่วม - เชียงราย",
+				"category":    "manual",
+				"province":    "เชียงราย",
+				"description": "จุดปักหมุดสังเกตการณ์แนวชายแดนเหนือสุด",
+			},
+		},
+	}
+
+	for _, sample := range samples {
+		sample.CreatedBy = actor
+		if _, err := service.repository.Create(ctx, sample); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (service *Service) UpsertSeedDocuments(ctx context.Context, documents []FeatureDocument) (int, error) {
 	if len(documents) == 0 {
 		return 0, nil
@@ -147,7 +269,7 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 		return FeatureDocument{}, ValidationError{Message: "type must be Feature"}
 	}
 
-	geometry, err := NormalizeGeometry(input.Geometry)
+	geometry, err := geo.NormalizeGeometry(input.Geometry)
 	if err != nil {
 		return FeatureDocument{}, err
 	}

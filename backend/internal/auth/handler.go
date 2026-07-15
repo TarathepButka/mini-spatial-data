@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/example/mini-spatial-data/backend/internal/config"
+	"github.com/example/mini-spatial-data/backend/internal/shared/api"
 	"github.com/gin-gonic/gin"
 )
 
@@ -261,5 +262,5 @@ func sameSiteMode(value string) http.SameSite {
 }
 
 func writeAuthError(c *gin.Context, status int, code string, message string) {
-	c.JSON(status, ErrorResponse{Error: ErrorBody{Code: code, Message: message}})
+	api.SendError(c, status, code, message)
 }

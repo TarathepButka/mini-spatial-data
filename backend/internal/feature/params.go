@@ -6,17 +6,30 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
+)
+
+const (
+	DefaultPage        = 1
+	MinPage            = 1
+	MaxPage            = 1_000_000
+	DefaultListLimit   = 20
+	MinListLimit       = 1
+	MaxListLimit       = 100
+	DefaultNearbyLimit = 50
+	MaxNearbyRadius    = 200_000 // 200 km in meters
 )
 
 func NewListParams(values url.Values) (ListParams, error) {
-	page, err := parsePositiveInt(values.Get("page"), 1, 1, 1_000_000)
+	page, err := parsePositiveInt(values.Get("page"), DefaultPage, MinPage, MaxPage)
 	if err != nil {
 		return ListParams{}, ValidationError{Message: "page must be a positive integer"}
 	}
 
-	limit, err := parsePositiveInt(values.Get("limit"), 20, 1, 100)
+	limit, err := parsePositiveInt(values.Get("limit"), DefaultListLimit, MinListLimit, MaxListLimit)
 	if err != nil {
-		return ListParams{}, ValidationError{Message: "limit must be between 1 and 100"}
+		return ListParams{}, ValidationError{Message: fmt.Sprintf("limit must be between %d and %d", MinListLimit, MaxListLimit)}
 	}
 
 	bbox, err := ParseBBox(values.Get("bbox"))
@@ -54,13 +67,13 @@ func NewNearbyParams(values url.Values) (NearbyParams, error) {
 		return NearbyParams{}, err
 	}
 
-	if radius <= 0 || radius > 200_000 {
-		return NearbyParams{}, ValidationError{Message: "radius must be greater than 0 and no more than 200000 meters"}
+	if radius <= 0 || radius > MaxNearbyRadius {
+		return NearbyParams{}, ValidationError{Message: fmt.Sprintf("radius must be greater than 0 and no more than %v meters", MaxNearbyRadius)}
 	}
 
-	limit, err := parsePositiveInt(values.Get("limit"), 50, 1, 100)
+	limit, err := parsePositiveInt(values.Get("limit"), DefaultNearbyLimit, MinListLimit, MaxListLimit)
 	if err != nil {
-		return NearbyParams{}, ValidationError{Message: "limit must be between 1 and 100"}
+		return NearbyParams{}, ValidationError{Message: fmt.Sprintf("limit must be between %d and %d", MinListLimit, MaxListLimit)}
 	}
 
 	return NearbyParams{
@@ -144,13 +157,5 @@ func parseRequiredFloat(raw string, name string) (float64, error) {
 }
 
 func validateLngLat(lng float64, lat float64) error {
-	if lng < -180 || lng > 180 {
-		return ValidationError{Message: "longitude must be between -180 and 180"}
-	}
-
-	if lat < -90 || lat > 90 {
-		return ValidationError{Message: "latitude must be between -90 and 90"}
-	}
-
-	return nil
+	return geo.ValidateLngLat(lng, lat)
 }
