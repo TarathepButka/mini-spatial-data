@@ -4,8 +4,6 @@ import { useMemo } from "react";
 import { DropdownMenu, DropdownMenuItem, DropdownTriggerButton } from "../../../components/ui/DropdownMenu";
 import { IconButton } from "../../../components/ui/IconButton";
 import type { FeaturesMeta, SpatialFeature } from "../../../types/geojson";
-import { geometrySummary } from "../utils/geometry";
-import { SummaryChips } from "./SummaryChips";
 import { categoryColor, featureCategory } from "../utils/styles";
 
 type FeaturesTableProps = {
@@ -48,10 +46,31 @@ export function FeaturesTable({
         header: "Name",
         cell: (info) => <span className="font-medium text-zinc-950">{info.getValue()}</span>,
       }),
-      columnHelper.accessor((row) => row.properties.province ?? "-", {
-        id: "province",
-        header: "Province",
-      }),
+      columnHelper.accessor(
+        (row) => {
+          const { tambol, amphoe, province } = row.properties;
+          return [tambol, amphoe, province].filter(Boolean).join(", ");
+        },
+        {
+          id: "location",
+          header: "Location",
+          cell: (info) => <span className="text-zinc-600">{info.getValue() || "-"}</span>,
+        }
+      ),
+      columnHelper.accessor(
+        (row) => {
+          const { th_date, th_time, createdAt } = row.properties;
+          if (th_date && th_time) return `${th_date} ${th_time}`;
+          if (th_date) return th_date;
+          if (createdAt) return new Date(createdAt as string).toLocaleString("th-TH");
+          return "-";
+        },
+        {
+          id: "datetime",
+          header: "Date / Time",
+          cell: (info) => <span className="text-zinc-600 tabular-nums">{info.getValue()}</span>,
+        }
+      ),
       columnHelper.accessor((row) => featureCategory(row), {
         id: "category",
         header: "Category",
@@ -65,12 +84,7 @@ export function FeaturesTable({
       columnHelper.accessor((row) => row.properties.frp, {
         id: "frp",
         header: "FRP",
-        cell: (info) => formatNumber(info.getValue()),
-      }),
-      columnHelper.accessor((row) => geometrySummary(row.geometry), {
-        id: "geometry",
-        header: "Geometry",
-        cell: (info) => <span className="font-mono text-xs text-zinc-600">{info.getValue()}</span>,
+        cell: (info) => <span className="tabular-nums">{formatNumber(info.getValue())}</span>,
       }),
       columnHelper.display({
         id: "actions",
@@ -123,12 +137,9 @@ export function FeaturesTable({
   const rangeEnd = Math.min(page * pageSize, totalRecords);
 
   return (
-    <section className="flex min-h-0 flex-col border-r border-zinc-200 bg-white">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-950">Features</h2>
-        </div>
-        <SummaryChips features={features} meta={meta} />
+    <section className="flex min-h-0 flex-col border-r border-zinc-200 max-lg:border-r-0 max-lg:border-b bg-white">
+      <div className="flex items-center gap-3 border-b border-zinc-200 px-4 py-3">
+        <h2 className="text-sm font-semibold text-zinc-950">Features</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">

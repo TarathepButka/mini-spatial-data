@@ -1,11 +1,13 @@
-import { LocateFixed, Save, X } from "lucide-react";
+import { Check, ChevronDown, Save, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "../../../components/ui/DropdownMenu";
 import { Button } from "../../../components/ui/Button";
 import { FormField, textControlClassName, textareaControlClassName } from "../../../components/ui/FormField";
 import { IconButton } from "../../../components/ui/IconButton";
 import type { FeatureInput, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
-import { CATEGORY_OPTIONS, DEFAULT_CATEGORY, DEFAULT_COORDINATES, GEOMETRY_TYPE_OPTIONS } from "../utils/constants";
-import { draftPointGeometry, geometrySummary, geometryTemplate, geometryToJson, parseGeometryInput } from "../utils/geometry";
+import { CATEGORY_OPTIONS, DEFAULT_CATEGORY } from "../utils/constants";
+import { geometrySummary, geometryToJson, parseGeometryInput } from "../utils/geometry";
+import { THAI_PROVINCES } from "../utils/provinces";
 
 type FeatureFormPanelProps = {
   open: boolean;
@@ -14,7 +16,6 @@ type FeatureFormPanelProps = {
   geometry: SpatialGeometry | null;
   saving: boolean;
   onClose: () => void;
-  onPickLocation: () => void;
   onGeometryChange: (geometry: SpatialGeometry) => void;
   onSubmit: (input: FeatureInput) => void;
 };
@@ -26,7 +27,6 @@ export function FeatureFormPanel({
   geometry,
   saving,
   onClose,
-  onPickLocation,
   onGeometryChange,
   onSubmit,
 }: FeatureFormPanelProps) {
@@ -37,6 +37,13 @@ export function FeatureFormPanel({
   const [description, setDescription] = useState("");
   const [rawGeometry, setRawGeometry] = useState("");
   const [geometryError, setGeometryError] = useState("");
+  const [provinceSearch, setProvinceSearch] = useState("");
+
+  const filteredProvinces = useMemo(() => {
+    const term = provinceSearch.trim().toLowerCase();
+    if (!term) return THAI_PROVINCES;
+    return THAI_PROVINCES.filter((p) => p.toLowerCase().includes(term));
+  }, [provinceSearch]);
 
   useEffect(() => {
     if (!open) {
@@ -66,7 +73,6 @@ export function FeatureFormPanel({
     setGeometryError("");
   }, [geometry, open]);
 
-  const geometryType = geometry?.type ?? "Point";
   const geometryStatus = useMemo(() => (geometry ? geometrySummary(geometry) : "No geometry"), [geometry]);
 
   function submit(event: FormEvent) {
@@ -90,13 +96,6 @@ export function FeatureFormPanel({
     });
   }
 
-  function changeGeometryType(type: SpatialGeometry["type"]) {
-    const nextGeometry = geometryTemplate(type, geometry);
-    onGeometryChange(nextGeometry);
-    setRawGeometry(geometryToJson(nextGeometry));
-    setGeometryError("");
-  }
-
   function changeRawGeometry(value: string) {
     setRawGeometry(value);
     const result = parseGeometryInput(value);
@@ -110,21 +109,12 @@ export function FeatureFormPanel({
     onGeometryChange(result.geometry);
   }
 
-  function usePointLocation() {
-    onPickLocation();
-
-    if (!geometry) {
-      const point = draftPointGeometry(DEFAULT_COORDINATES);
-      onGeometryChange(point);
-    }
-  }
-
   if (!open) {
     return null;
   }
 
   return (
-    <aside className="absolute bottom-4 right-4 top-4 z-20 flex w-[min(440px,calc(100vw-2rem))] flex-col overflow-hidden rounded border border-zinc-200 bg-white shadow-xl max-sm:left-4 max-sm:w-auto">
+    <aside className="absolute right-4 top-4 z-20 flex w-[min(440px,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded border border-zinc-200 bg-white shadow-xl max-sm:left-4 max-sm:w-auto">
       <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -161,37 +151,84 @@ export function FeatureFormPanel({
             </select>
           </FormField>
           <FormField label="Province">
-            <input
-              value={province}
-              onChange={(event) => setProvince(event.target.value)}
-              className={textControlClassName}
-            />
+            <DropdownMenu
+              containerClassName="relative"
+              menuClassName="absolute left-0 z-30 mt-1 w-full overflow-hidden rounded border border-zinc-200 bg-white text-sm text-zinc-700 shadow-lg"
+              renderTrigger={({ open, toggle }) => (
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className={`${textControlClassName} flex w-full items-center justify-between text-left`}
+                >
+                  <span className="truncate text-zinc-700">{province || "Select"}</span>
+                  <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${open ? "rotate-180" : ""}`} />
+                </button>
+              )}
+            >
+              {({ close }) => (
+                <>
+                  {/* Search input */}
+                  <div className="border-b border-zinc-100 p-1.5">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" size={13} />
+                      <input
+                        value={provinceSearch}
+                        onChange={(e) => setProvinceSearch(e.target.value)}
+                        placeholder="ค้นหาจังหวัด..."
+                        autoComplete="off"
+                        className="h-7 w-full rounded border border-zinc-200 bg-zinc-50 pl-7 pr-2 text-xs outline-none transition focus:border-zinc-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="max-h-52 overflow-auto overscroll-contain p-1">
+                    <DropdownMenuItem
+                      role="menuitemradio"
+                      aria-checked={!province}
+                      active={!province}
+                      onClick={() => {
+                        setProvince("");
+                        setProvinceSearch("");
+                        close();
+                      }}
+                    >
+                      <span className="truncate">กรุงเทพมหานคร</span>
+                      {!province ? <Check size={16} className="shrink-0 text-zinc-950" /> : null}
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    {filteredProvinces.length === 0 && (
+                      <div className="px-2 py-1.5 text-xs text-zinc-400">ไม่พบจังหวัด</div>
+                    )}
+
+                    {filteredProvinces.map((option) => {
+                      const active = province === option;
+
+                      return (
+                        <DropdownMenuItem
+                          key={option}
+                          role="menuitemradio"
+                          aria-checked={active}
+                          onClick={() => {
+                            setProvince(option);
+                            setProvinceSearch("");
+                            close();
+                          }}
+                        >
+                          <span className="truncate">{option}</span>
+                          {active ? <Check size={16} className="shrink-0 text-zinc-950" /> : null}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </DropdownMenu>
           </FormField>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto] gap-3">
-          <FormField label="Geometry type">
-            <select
-              value={geometryType}
-              onChange={(event) => changeGeometryType(event.target.value as SpatialGeometry["type"])}
-              className={textControlClassName}
-            >
-              {GEOMETRY_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <button
-            type="button"
-            title="Use point from map"
-            onClick={usePointLocation}
-            className="mt-6 inline-flex h-10 items-center justify-center rounded border border-zinc-200 px-3 text-zinc-700 hover:border-zinc-400"
-          >
-            <LocateFixed size={18} />
-          </button>
-        </div>
+
 
         <FormField label="Raw GeoJSON geometry">
           <textarea

@@ -10,6 +10,7 @@ import { FeatureMap } from "../map/FeatureMap";
 import { DEFAULT_COORDINATES, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, SEARCH_COMMIT_DELAY_MS } from "../utils/constants";
 import { draftPointGeometry } from "../utils/geometry";
 import { featureCategory } from "../utils/styles";
+import { THAI_PROVINCES } from "../utils/provinces";
 import { CategoryLegend } from "./CategoryLegend";
 import { DeleteFeatureDialog } from "./DeleteFeatureDialog";
 import { FeatureFormPanel } from "./FeatureFormPanel";
@@ -133,6 +134,7 @@ export function FeaturesDashboard() {
     if (!showOnlyMine || !meta) {
       return meta;
     }
+
     return {
       ...meta,
       total: filteredFeatures.length,
@@ -216,13 +218,18 @@ export function FeaturesDashboard() {
     commitSearch(debouncedSearchInput);
   }, [debouncedSearchInput]);
 
-  const provinceOptions = useMemo(() => {
-    const options = [...features, ...mapFeatures]
-      .map((feature) => feature.properties.province)
-      .filter((value): value is string => Boolean(value));
+  const provinceCounts = useMemo(() => {
+    const counts = new Map<string, number>();
 
-    return Array.from(new Set([...options, province].filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  }, [features, mapFeatures, province]);
+    for (const feature of [...features, ...mapFeatures]) {
+      const p = (feature.properties.province ?? "").trim();
+      if (p) {
+        counts.set(p, (counts.get(p) ?? 0) + 1);
+      }
+    }
+
+    return counts;
+  }, [features, mapFeatures]);
 
   const categories = useMemo(
     () => Array.from(new Set([...features.map(featureCategory), ...mapFeatures.map(featureCategory)])).sort(),
@@ -237,16 +244,7 @@ export function FeaturesDashboard() {
     setDraftGeometry(draftPointGeometry(coordinates));
   }
 
-  function handleAdd() {
-    if (!canCreate) {
-      return;
-    }
 
-    setEditingFeature(null);
-    setFormMode("create");
-    setDraftGeometry(draftGeometry ?? draftPointGeometry(DEFAULT_COORDINATES));
-    setFormOpen(true);
-  }
 
   function commitSearch(value: string) {
     setAppliedSearch(value.trim());
@@ -377,7 +375,7 @@ export function FeaturesDashboard() {
           <h1 className="text-xl tracking-tight">
             <span className="font-light text-zinc-400">Mini</span>{" "}
             <span className="font-extrabold text-zinc-900">Spatial</span>{" "}
-            <span className="font-normal text-zinc-600">Data Platform</span>
+            <span className="font-normal text-zinc-600">Data</span>
           </h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
@@ -392,16 +390,14 @@ export function FeaturesDashboard() {
         onSuggestionSelect={focusFeature}
         province={province}
         onProvinceChange={setProvince}
-        provinceOptions={provinceOptions}
+        provinceCounts={provinceCounts}
         categories={categories}
         selectedCategories={selectedCategories}
         onCategoriesChange={setSelectedCategories}
         bboxEnabled={bboxEnabled}
         bbox={bbox}
         onBBoxEnabledChange={setBBoxEnabled}
-        canCreate={canCreate}
         canSeed={canSeed}
-        onAdd={handleAdd}
         onSeed={() => {
           if (canSeed) {
             seedMutation.mutate();
@@ -420,10 +416,11 @@ export function FeaturesDashboard() {
 
       <section
         className={[
-          "relative grid min-h-0 flex-1 overflow-hidden",
+          "relative grid min-h-0 flex-1",
           viewMode === "split"
-            ? "grid-cols-[minmax(480px,42%)_1fr] max-lg:grid-cols-1"
+            ? "grid-cols-[minmax(480px,42%)_1fr] max-lg:grid-cols-1 max-lg:grid-rows-[450px_450px] max-lg:overflow-y-auto"
             : "grid-cols-1",
+          "lg:overflow-hidden"
         ].join(" ")}
       >
         {viewMode !== "map" && (
@@ -447,7 +444,7 @@ export function FeaturesDashboard() {
           />
         )}
         {viewMode !== "table" && (
-          <div className="relative min-h-[420px]">
+          <div className="relative h-full min-h-[320px] w-full">
             <FeatureMap
               features={filteredMapFeatures}
               selectedFeatureId={selectedFeatureId}
@@ -480,9 +477,9 @@ export function FeaturesDashboard() {
           geometry={draftGeometry}
           saving={saving}
           onClose={closeForm}
-          onPickLocation={() => setDraftGeometry(draftGeometry ?? draftPointGeometry(DEFAULT_COORDINATES))}
           onGeometryChange={setDraftGeometry}
           onSubmit={handleSubmit}
+
         />
 
         <DeleteFeatureDialog
