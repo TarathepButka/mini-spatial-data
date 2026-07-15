@@ -15,6 +15,7 @@ import {
   switchCurrentRole,
 } from "../../api/auth";
 import { LoginScreen } from "./LoginScreen";
+import { DashboardSkeleton } from "../features/DashboardSkeleton";
 import {
   permissionFlagsForUser,
   type PermissionFlags,
@@ -87,7 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {user ? children : <LoginScreen loading={loading} />}
+      {loading ? (
+        <DashboardSkeleton />
+      ) : user ? (
+        children
+      ) : (
+        <LoginScreen loading={loading} />
+      )}
     </AuthContext.Provider>
   );
 }
