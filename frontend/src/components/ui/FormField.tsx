@@ -7,13 +7,19 @@ type FormFieldProps = {
   children: ReactNode;
   className?: string;
   label: string;
+  required?: boolean;
+  error?: string;
 };
 
-export function FormField({ children, className = "", label }: FormFieldProps) {
+export function FormField({ children, className = "", label, required, error }: FormFieldProps) {
   return (
     <label className={`grid gap-1 text-sm font-medium text-zinc-700 ${className}`}>
-      {label}
+      <span>
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
+      </span>
       {children}
+      {error && <span className="text-xs font-normal text-red-500">{error}</span>}
     </label>
   );
 }

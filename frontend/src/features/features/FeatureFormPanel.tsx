@@ -31,6 +31,7 @@ export function FeatureFormPanel({
   onSubmit,
 }: FeatureFormPanelProps) {
   const [name, setName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [province, setProvince] = useState("");
   const [description, setDescription] = useState("");
@@ -43,6 +44,7 @@ export function FeatureFormPanel({
     }
 
     setName(feature?.properties.name ?? "");
+    setNameTouched(false);
     setCategory(feature?.properties.category ?? feature?.properties.confidence ?? DEFAULT_CATEGORY);
     setProvince(feature?.properties.province ?? "");
     setDescription(feature?.properties.description ?? "");
@@ -134,10 +136,11 @@ export function FeatureFormPanel({
           </IconButton>
         </div>
 
-        <FormField label="Name">
+        <FormField label="Name" required error={nameTouched && name.trim() === "" ? "Name is required" : undefined}>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
+            onBlur={() => setNameTouched(true)}
             required
             className={textControlClassName}
           />
