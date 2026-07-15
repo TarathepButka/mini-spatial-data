@@ -42,6 +42,14 @@ const SELECT_MODE_FLAGS = {
   },
 };
 
+/** Shared visual tokens for coordinate handles shown during line/polygon drawing. */
+const COORDINATE_POINT_STYLE = {
+  coordinatePointColor: "#2f80ed",
+  coordinatePointWidth: 6,
+  coordinatePointOutlineColor: "#ffffff",
+  coordinatePointOutlineWidth: 2,
+} as const;
+
 export function createTerraDraw(map: Map) {
   return new TerraDraw({
     adapter: new TerraDrawMapLibreGLAdapter({ map }),
@@ -50,8 +58,15 @@ export function createTerraDraw(map: Map) {
         flags: SELECT_MODE_FLAGS,
       }),
       new TerraDrawPointMode(),
-      new TerraDrawLineStringMode({ keyEvents: { cancel: "Escape", finish: "Enter" } }),
-      new TerraDrawPolygonMode(),
+      new TerraDrawLineStringMode({
+        showCoordinatePoints: true,
+        keyEvents: { cancel: "Escape", finish: "Enter" },
+        styles: COORDINATE_POINT_STYLE,
+      }),
+      new TerraDrawPolygonMode({
+        showCoordinatePoints: true,
+        styles: COORDINATE_POINT_STYLE,
+      }),
     ],
   });
 }
