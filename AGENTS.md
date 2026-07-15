@@ -58,7 +58,7 @@ This file contains durable repo guidance for Codex. Keep it practical and scoped
 
 - Do not read, print, copy, or summarize real secret files such as `.env`, `.env.local`, `.env.*.local`, private keys, credential exports, or local token stores unless the user explicitly asks for that exact file and understands it may expose secrets.
 - Use `backend/.env.example`, `frontend/.env.example`, README docs, or explicit user-provided values when reasoning about required environment variables.
-- Never log, commit, or paste secrets including `VALLARIS_API_KEY`, `GOOGLE_CLIENT_ID`, `AUTH_JWT_SECRET`, Google ID tokens, app JWTs, cookies, or MongoDB credentials.
+- Never log, commit, or paste secrets including `.env`, `.env.local`, `.env.*.local`, private keys, credential exports, or local token stores.
 - Keep auth session tokens in HttpOnly cookies only. Do not reintroduce localStorage/sessionStorage token storage.
 - If debugging auth, inspect response status, cookie presence/attributes, and sanitized config names rather than token values.
 - Validate and sanitize all external input at API boundaries, especially GeoJSON coordinates, bbox values, ObjectIDs, pagination, and Google login payloads.
@@ -70,7 +70,6 @@ This file contains durable repo guidance for Codex. Keep it practical and scoped
 
 - Vallaris seed data is hotspot/fire-detection data normalized into the `places` domain.
 - Keep important Vallaris properties when normalizing: `hotspotid`, `confidence`, `frp`, province/amphoe/tambol, date/time, satellite/instrument.
-- Never commit real `VALLARIS_API_KEY`, `GOOGLE_CLIENT_ID`, or `AUTH_JWT_SECRET` values.
 - Development env examples belong in `backend/.env.example` and `frontend/.env.example`; real secrets belong in local `.env` files only.
 
 ## Required Checks

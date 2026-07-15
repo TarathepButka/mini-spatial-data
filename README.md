@@ -90,7 +90,6 @@ Create a Google OAuth **Web application** client id in Google Cloud Console and 
 
 ```txt
 http://localhost:3000
-http://localhost:5173
 ```
 
 `POST /api/v1/auth/google` verifies the Google ID token, sets an HttpOnly cookie, and returns only the user profile plus expiry metadata. The frontend sends cookies with `credentials: "include"` and does not store the app JWT in `localStorage`.
