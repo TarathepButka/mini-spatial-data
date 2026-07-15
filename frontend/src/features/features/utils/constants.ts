@@ -14,6 +14,5 @@ export const MAP_DEFAULT_CENTER: Position = [100.75, 15.2];
 export const MAP_DEFAULT_ZOOM = 5;
 export const MAP_BOUNDS_DEBOUNCE_MS = 300;
 
-export const GEOMETRY_TYPE_OPTIONS: SpatialGeometry["type"][] = ["Point", "LineString", "Polygon"];
 export const LINE_DRAW_FINISH_HINT = "Double-click or press Enter to finish.";
 export const LINE_DRAW_INITIAL_HINT = `Click map to add vertices. ${LINE_DRAW_FINISH_HINT}`;
