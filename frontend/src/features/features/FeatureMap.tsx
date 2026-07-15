@@ -1,7 +1,7 @@
 import { MapPin, MousePointer2, Pentagon, Route, Trash2 } from "lucide-react";
 import maplibregl, { type Map } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import type { TerraDraw } from "terra-draw";
+import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import type { BoundingBox, SpatialFeature, SpatialGeometry } from "../../types/geojson";
 import { LINE_DRAW_FINISH_HINT, LINE_DRAW_INITIAL_HINT } from "./constants";
 import { draftPointGeometry, geometryBounds, geometrySummary } from "./geometry";
@@ -248,14 +248,16 @@ export function FeatureMap({
     draw.clear();
 
     if (draftGeometry) {
+      const featureId = draw.getFeatureId();
       draw.addFeatures([
         {
-          id: draw.getFeatureId(),
+          id: featureId,
           type: "Feature",
           geometry: draftGeometry,
           properties: { mode: drawModeForGeometry(draftGeometry) },
-        } as never,
+        } as GeoJSONStoreFeatures,
       ]);
+      draw.selectFeature(featureId);
     }
 
     drawGeometryJsonRef.current = nextJson;
@@ -386,10 +388,6 @@ export function FeatureMap({
     }
 
     callbacksRef.current.onDraftGeometryChange(chosen.geometry, { finished: Boolean(finishedId) });
-
-    if (finishedId) {
-      setDrawMode("select");
-    }
   }
 
   function finishCurrentLine() {
