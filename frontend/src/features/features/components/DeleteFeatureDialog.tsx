@@ -1,10 +1,10 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { AlertTriangle, LoaderCircle, X } from "lucide-react";
-import { Button } from "../../components/ui/Button";
-import { IconButton } from "../../components/ui/IconButton";
-import type { SpatialFeature } from "../../types/geojson";
-import { geometrySummary } from "./geometry";
-import { featureCategory } from "./styles";
+import { Button } from "../../../components/ui/Button";
+import { IconButton } from "../../../components/ui/IconButton";
+import type { SpatialFeature } from "../../../types/geojson";
+import { geometrySummary } from "../utils/geometry";
+import { featureCategory } from "../utils/styles";
 
 type DeleteFeatureDialogProps = {
   open: boolean;

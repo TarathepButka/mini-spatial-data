@@ -15,7 +15,7 @@ import {
   switchCurrentRole,
 } from "../../api/auth";
 import { LoginScreen } from "./LoginScreen";
-import { DashboardSkeleton } from "../features/DashboardSkeleton";
+import { DashboardSkeleton } from "../features";
 import {
   permissionFlagsForUser,
   type PermissionFlags,

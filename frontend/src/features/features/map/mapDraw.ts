@@ -7,8 +7,8 @@ import {
   TerraDrawSelectMode,
 } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
-import type { SpatialGeometry } from "../../types/geojson";
-import { validateGeometry } from "./geometry";
+import type { SpatialGeometry } from "../../../types/geojson";
+import { validateGeometry } from "../utils/geometry";
 
 export type DrawMode = "select" | "point" | "linestring" | "polygon";
 export type DrawFeatureId = string | number;

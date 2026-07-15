@@ -2,9 +2,9 @@ import { MapPin, MousePointer2, Pentagon, Route, Trash2 } from "lucide-react";
 import maplibregl, { type Map } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
-import type { BoundingBox, SpatialFeature, SpatialGeometry } from "../../types/geojson";
-import { LINE_DRAW_FINISH_HINT, LINE_DRAW_INITIAL_HINT } from "./constants";
-import { draftPointGeometry, geometryBounds, geometrySummary } from "./geometry";
+import type { BoundingBox, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
+import { LINE_DRAW_FINISH_HINT, LINE_DRAW_INITIAL_HINT } from "../utils/constants";
+import { draftPointGeometry, geometryBounds, geometrySummary } from "../utils/geometry";
 import {
   BOUNDS_CHANGE_DELAY_MS,
   FEATURE_CLICK_LAYERS,
@@ -28,6 +28,7 @@ type FeatureMapProps = {
   bboxEnabled: boolean;
   canCreate: boolean;
   canEdit: boolean;
+  canEditFeature: (feature: SpatialFeature) => boolean;
   canDeleteFeature: (feature: SpatialFeature) => boolean;
   onMapClick: (coordinates: [number, number]) => void;
   onDraftGeometryChange: (geometry: SpatialGeometry | null, meta?: { finished?: boolean }) => void;
@@ -49,6 +50,7 @@ export function FeatureMap({
   bboxEnabled,
   canCreate,
   canEdit,
+  canEditFeature,
   canDeleteFeature,
   onMapClick,
   onDraftGeometryChange,
@@ -71,7 +73,7 @@ export function FeatureMap({
   const lastHandledFocusRequestRef = useRef(0);
   const callbacksRef = useRef<CallbackRefs>({
     canCreate,
-    canEdit,
+    canEdit: canEditFeature,
     canDeleteFeature,
     onMapClick,
     onDraftGeometryChange,
@@ -81,7 +83,7 @@ export function FeatureMap({
   });
 
   featuresRef.current = features;
-  callbacksRef.current = { canCreate, canEdit, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete };
+  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {

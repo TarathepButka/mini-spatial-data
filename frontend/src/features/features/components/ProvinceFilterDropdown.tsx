@@ -1,5 +1,5 @@
 import { Check, MapPin } from "lucide-react";
-import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownTriggerButton } from "../../components/ui/DropdownMenu";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownTriggerButton } from "../../../components/ui/DropdownMenu";
 
 type ProvinceFilterDropdownProps = {
   province: string;

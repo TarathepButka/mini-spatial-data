@@ -1,9 +1,9 @@
-import type { SpatialFeature } from "../../types/geojson";
-import { geometrySummary } from "./geometry";
-import { featureCategory } from "./styles";
+import type { SpatialFeature } from "../../../types/geojson";
+import { geometrySummary } from "../utils/geometry";
+import { featureCategory } from "../utils/styles";
 
 export type FeaturePopupCallbacks = {
-  canEdit: boolean;
+  canEdit: (feature: SpatialFeature) => boolean;
   canDeleteFeature: (feature: SpatialFeature) => boolean;
   onEdit: (feature: SpatialFeature) => void;
   onDelete: (feature: SpatialFeature) => void;
@@ -29,14 +29,15 @@ export function createPopup(feature: SpatialFeature, callbacksRef: { readonly cu
   container.appendChild(meta);
 
   const canDelete = callbacksRef.current.canDeleteFeature(feature);
-  if (!callbacksRef.current.canEdit && !canDelete) {
+  const canEdit = callbacksRef.current.canEdit(feature);
+  if (!canEdit && !canDelete) {
     return container;
   }
 
   const actions = document.createElement("div");
   actions.className = "mt-1 flex gap-2";
 
-  if (callbacksRef.current.canEdit) {
+  if (canEdit) {
     const editButton = document.createElement("button");
     editButton.type = "button";
     editButton.textContent = "Edit";

@@ -1,4 +1,4 @@
-import type { SpatialFeature } from "../../types/geojson";
+import type { SpatialFeature } from "../../../types/geojson";
 import { CATEGORY_OPTIONS } from "./constants";
 
 export const DEFAULT_CATEGORIES = CATEGORY_OPTIONS;

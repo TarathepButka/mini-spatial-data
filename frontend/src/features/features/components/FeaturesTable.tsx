@@ -1,12 +1,12 @@
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { Check, ChevronLeft, ChevronRight, LocateFixed, Pencil, Trash2 } from "lucide-react";
 import { useMemo } from "react";
-import { DropdownMenu, DropdownMenuItem, DropdownTriggerButton } from "../../components/ui/DropdownMenu";
-import { IconButton } from "../../components/ui/IconButton";
-import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
-import { geometrySummary } from "./geometry";
+import { DropdownMenu, DropdownMenuItem, DropdownTriggerButton } from "../../../components/ui/DropdownMenu";
+import { IconButton } from "../../../components/ui/IconButton";
+import type { FeaturesMeta, SpatialFeature } from "../../../types/geojson";
+import { geometrySummary } from "../utils/geometry";
 import { SummaryChips } from "./SummaryChips";
-import { categoryColor, featureCategory } from "./styles";
+import { categoryColor, featureCategory } from "../utils/styles";
 
 type FeaturesTableProps = {
   features: SpatialFeature[];
@@ -15,7 +15,7 @@ type FeaturesTableProps = {
   pageSize: number;
   pageSizeOptions: number[];
   loading: boolean;
-  canEdit: boolean;
+  canEditFeature: (feature: SpatialFeature) => boolean;
   canDeleteFeature: (feature: SpatialFeature) => boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -33,7 +33,7 @@ export function FeaturesTable({
   pageSize,
   pageSizeOptions,
   loading,
-  canEdit,
+  canEditFeature,
   canDeleteFeature,
   onPageChange,
   onPageSizeChange,
@@ -86,7 +86,7 @@ export function FeaturesTable({
             >
               <LocateFixed size={16} />
             </IconButton>
-            {canEdit ? (
+            {canEditFeature(row.original) ? (
               <IconButton
                 title="Edit"
                 onClick={(event) => {
@@ -113,7 +113,7 @@ export function FeaturesTable({
         ),
       }),
     ],
-    [canDeleteFeature, canEdit, onDelete, onEdit, onFocus],
+    [canDeleteFeature, canEditFeature, onDelete, onEdit, onFocus],
   );
 
   const table = useReactTable({ data: features, columns, getCoreRowModel: getCoreRowModel() });

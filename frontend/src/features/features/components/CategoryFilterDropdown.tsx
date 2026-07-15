@@ -1,6 +1,6 @@
 import { Check, ListFilter } from "lucide-react";
-import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownTriggerButton } from "../../components/ui/DropdownMenu";
-import { DEFAULT_CATEGORIES, categoryColor } from "./styles";
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownTriggerButton } from "../../../components/ui/DropdownMenu";
+import { DEFAULT_CATEGORIES, categoryColor } from "../utils/styles";
 
 type CategoryFilterDropdownProps = {
   categories: string[];

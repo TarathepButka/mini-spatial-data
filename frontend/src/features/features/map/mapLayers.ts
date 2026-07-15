@@ -1,7 +1,7 @@
 import type { FilterSpecification, GeoJSONSource, GeoJSONSourceSpecification, Map, StyleSpecification } from "maplibre-gl";
-import type { BoundingBox, SpatialFeature } from "../../types/geojson";
-import { MAP_BOUNDS_DEBOUNCE_MS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "./constants";
-import { categoryColor, featureCategory } from "./styles";
+import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
+import { MAP_BOUNDS_DEBOUNCE_MS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "../utils/constants";
+import { categoryColor, featureCategory } from "../utils/styles";
 
 export const FEATURE_SOURCE_ID = "spatial-features";
 export const POINT_LAYER_ID = "spatial-features-point";

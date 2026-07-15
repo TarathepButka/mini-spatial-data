@@ -1,7 +1,7 @@
-import { Database, MapPinned, Plus } from "lucide-react";
+import { Database, MapPinned, Plus, User } from "lucide-react";
 
-import { Button } from "../../components/ui/Button";
-import type { BoundingBox, SpatialFeature } from "../../types/geojson";
+import { Button } from "../../../components/ui/Button";
+import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
 import { CategoryFilterDropdown } from "./CategoryFilterDropdown";
 import { ProvinceFilterDropdown } from "./ProvinceFilterDropdown";
 import { SearchAutocomplete } from "./SearchAutocomplete";
@@ -28,6 +28,8 @@ type ToolbarProps = {
   seedLoading: boolean;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  showOnlyMine: boolean;
+  onShowOnlyMineChange: (enabled: boolean) => void;
 };
 
 export function Toolbar({
@@ -51,6 +53,8 @@ export function Toolbar({
   seedLoading,
   viewMode,
   onViewModeChange,
+  showOnlyMine,
+  onShowOnlyMineChange,
 }: ToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3">
@@ -78,6 +82,17 @@ export function Toolbar({
         />
         <MapPinned size={16} />
         Viewport
+      </label>
+
+      <label className="inline-flex h-10 cursor-pointer select-none items-center gap-2 rounded border border-zinc-200 bg-white px-3 text-sm text-zinc-700">
+        <input
+          type="checkbox"
+          checked={showOnlyMine}
+          onChange={(event) => onShowOnlyMineChange(event.target.checked)}
+          className="h-4 w-4 cursor-pointer accent-zinc-900"
+        />
+        <User size={16} />
+        Show only mine
       </label>
 
       <ViewModeToggle mode={viewMode} onChange={onViewModeChange} />

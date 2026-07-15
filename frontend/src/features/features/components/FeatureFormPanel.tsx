@@ -1,11 +1,11 @@
 import { LocateFixed, Save, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Button } from "../../components/ui/Button";
-import { FormField, textControlClassName, textareaControlClassName } from "../../components/ui/FormField";
-import { IconButton } from "../../components/ui/IconButton";
-import type { FeatureInput, SpatialFeature, SpatialGeometry } from "../../types/geojson";
-import { CATEGORY_OPTIONS, DEFAULT_CATEGORY, DEFAULT_COORDINATES, GEOMETRY_TYPE_OPTIONS } from "./constants";
-import { draftPointGeometry, geometrySummary, geometryTemplate, geometryToJson, parseGeometryInput } from "./geometry";
+import { Button } from "../../../components/ui/Button";
+import { FormField, textControlClassName, textareaControlClassName } from "../../../components/ui/FormField";
+import { IconButton } from "../../../components/ui/IconButton";
+import type { FeatureInput, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
+import { CATEGORY_OPTIONS, DEFAULT_CATEGORY, DEFAULT_COORDINATES, GEOMETRY_TYPE_OPTIONS } from "../utils/constants";
+import { draftPointGeometry, geometrySummary, geometryTemplate, geometryToJson, parseGeometryInput } from "../utils/geometry";
 
 type FeatureFormPanelProps = {
   open: boolean;

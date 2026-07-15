@@ -1,5 +1,5 @@
-import type { FeaturesMeta, SpatialFeature } from "../../types/geojson";
-import { featureCategory } from "./styles";
+import type { FeaturesMeta, SpatialFeature } from "../../../types/geojson";
+import { featureCategory } from "../utils/styles";
 
 type SummaryChipsProps = {
   features: SpatialFeature[];

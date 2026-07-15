@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import type { AuthUser } from "../../api/auth";
-import { DropdownMenu } from "../../components/ui/DropdownMenu";
+import type { AuthUser } from "../../../api/auth";
+import { DropdownMenu } from "../../../components/ui/DropdownMenu";
 
 type UserMenuProps = {
   user: AuthUser;

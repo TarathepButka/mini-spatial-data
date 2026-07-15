@@ -1,4 +1,4 @@
-import type { BoundingBox, LineStringGeometry, PointGeometry, PolygonGeometry, Position, SpatialGeometry } from "../../types/geojson";
+import type { BoundingBox, LineStringGeometry, PointGeometry, PolygonGeometry, Position, SpatialGeometry } from "../../../types/geojson";
 import { DEFAULT_COORDINATES } from "./constants";
 
 export type GeometryValidationResult =

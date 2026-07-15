@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-export const textControlClassName = "h-10 rounded border border-zinc-200 px-3 font-normal outline-none focus:border-zinc-400";
-export const textareaControlClassName = "resize-none rounded border border-zinc-200 px-3 py-2 font-normal outline-none focus:border-zinc-400";
+export const textControlClassName = "w-full h-10 rounded border border-zinc-200 px-3 font-normal outline-none focus:border-zinc-400";
+export const textareaControlClassName = "w-full resize-none rounded border border-zinc-200 px-3 py-2 font-normal outline-none focus:border-zinc-400";
 
 type FormFieldProps = {
   children: ReactNode;

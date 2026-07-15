@@ -1,21 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature } from "../../api/features";
-import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../types/geojson";
-import { useAuth } from "../auth/AuthContext";
-import { canDeleteFeature } from "../auth/permissionFlags";
+import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature } from "../../../api/features";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
+import { useAuth } from "../../auth/AuthContext";
+import { canDeleteFeature, canEditFeature } from "../../auth/permissionFlags";
+import { FeatureMap } from "../map/FeatureMap";
+import { DEFAULT_COORDINATES, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, SEARCH_COMMIT_DELAY_MS } from "../utils/constants";
+import { draftPointGeometry } from "../utils/geometry";
+import { featureCategory } from "../utils/styles";
 import { CategoryLegend } from "./CategoryLegend";
 import { DeleteFeatureDialog } from "./DeleteFeatureDialog";
 import { FeatureFormPanel } from "./FeatureFormPanel";
-import { FeatureMap } from "./FeatureMap";
 import { FeaturesTable } from "./FeaturesTable";
-import { DEFAULT_COORDINATES, DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, SEARCH_COMMIT_DELAY_MS } from "./constants";
-import { draftPointGeometry } from "./geometry";
 import { Toolbar } from "./Toolbar";
 import { UserMenu } from "./UserMenu";
-import { featureCategory } from "./styles";
 import type { ViewMode } from "./ViewModeToggle";
 
 export function FeaturesDashboard() {
@@ -23,7 +23,7 @@ export function FeaturesDashboard() {
   const queryClient = useQueryClient();
   const {
     canCreateFeature: canCreate,
-    canEditFeature: canEdit,
+    canEditAnyFeature: canEditAny,
     canSeedVallaris: canSeed,
   } = permissionFlags;
   const [page, setPage] = useState(1);
@@ -43,6 +43,7 @@ export function FeaturesDashboard() {
   const [draftGeometry, setDraftGeometry] = useState<SpatialGeometry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SpatialFeature | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [showOnlyMine, setShowOnlyMine] = useState(false);
 
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
 
@@ -103,6 +104,41 @@ export function FeaturesDashboard() {
   });
 
   const mapFeatures = mapFeaturesQuery.data?.data.features ?? features;
+
+  const filteredFeatures = useMemo(() => {
+    if (!showOnlyMine || !user) {
+      return features;
+    }
+    return features.filter((feature) => {
+      const creator = feature.properties.createdBy;
+      if (!creator) return false;
+      if (creator.sub && creator.sub === user.sub) return true;
+      return Boolean(creator.email && creator.email.toLowerCase() === user.email.toLowerCase());
+    });
+  }, [features, showOnlyMine, user]);
+
+  const filteredMapFeatures = useMemo(() => {
+    if (!showOnlyMine || !user) {
+      return mapFeatures;
+    }
+    return mapFeatures.filter((feature) => {
+      const creator = feature.properties.createdBy;
+      if (!creator) return false;
+      if (creator.sub && creator.sub === user.sub) return true;
+      return Boolean(creator.email && creator.email.toLowerCase() === user.email.toLowerCase());
+    });
+  }, [mapFeatures, showOnlyMine, user]);
+
+  const filteredMeta = useMemo(() => {
+    if (!showOnlyMine || !meta) {
+      return meta;
+    }
+    return {
+      ...meta,
+      total: filteredFeatures.length,
+      totalPages: 1,
+    };
+  }, [meta, showOnlyMine, filteredFeatures.length]);
 
   const createMutation = useMutation({
     mutationFn: createFeature,
@@ -217,7 +253,7 @@ export function FeaturesDashboard() {
   }
 
   function handleEdit(feature: SpatialFeature) {
-    if (!canEdit) {
+    if (!canEditRecord(feature)) {
       return;
     }
 
@@ -282,6 +318,10 @@ export function FeaturesDashboard() {
     return canDeleteFeature(user, feature, permissionFlags);
   }
 
+  function canEditRecord(feature: SpatialFeature) {
+    return canEditFeature(user, feature, permissionFlags);
+  }
+
   function closeDeleteDialog() {
     if (deleteMutation.isPending) {
       return;
@@ -292,7 +332,7 @@ export function FeaturesDashboard() {
 
   function handleSubmit(input: FeatureInput) {
     if (formMode === "edit" && editingFeature) {
-      if (!canEdit) {
+      if (!canEditRecord(editingFeature)) {
         return;
       }
 
@@ -370,6 +410,8 @@ export function FeaturesDashboard() {
         seedLoading={seedMutation.isPending}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showOnlyMine={showOnlyMine}
+        onShowOnlyMineChange={setShowOnlyMine}
       />
 
       {error instanceof Error && (
@@ -386,16 +428,16 @@ export function FeaturesDashboard() {
       >
         {viewMode !== "map" && (
           <FeaturesTable
-            features={features}
-            meta={meta}
+            features={filteredFeatures}
+            meta={filteredMeta}
             page={page}
             pageSize={pageSize}
             pageSizeOptions={PAGE_SIZE_OPTIONS}
             loading={featuresQuery.isFetching}
-            canEdit={canEdit}
+            canEditFeature={canEditRecord}
             canDeleteFeature={canDeleteRecord}
             onPageChange={setPage}
-            onPageSizeChange={(nextPageSize) => {
+            onPageSizeChange={(nextPageSize: number) => {
               setPageSize(nextPageSize);
               setPage(1);
             }}
@@ -407,13 +449,14 @@ export function FeaturesDashboard() {
         {viewMode !== "table" && (
           <div className="relative min-h-[420px]">
             <FeatureMap
-              features={mapFeatures}
+              features={filteredMapFeatures}
               selectedFeatureId={selectedFeatureId}
               focusRequestId={mapFocusRequestId}
               draftGeometry={draftGeometry}
               bboxEnabled={bboxEnabled}
               canCreate={canCreate}
-              canEdit={canEdit}
+              canEdit={canEditAny}
+              canEditFeature={canEditRecord}
               canDeleteFeature={canDeleteRecord}
               onMapClick={handleMapClick}
               onDraftGeometryChange={handleDraftGeometryChange}
@@ -446,7 +489,7 @@ export function FeaturesDashboard() {
           open={Boolean(deleteTarget)}
           feature={deleteTarget}
           deleting={deleteMutation.isPending}
-          onOpenChange={(open) => {
+          onOpenChange={(open: boolean) => {
             if (!open) {
               closeDeleteDialog();
             }

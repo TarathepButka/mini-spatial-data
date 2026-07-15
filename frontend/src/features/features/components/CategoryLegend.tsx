@@ -1,4 +1,4 @@
-import { DEFAULT_CATEGORIES, categoryColor } from "./styles";
+import { DEFAULT_CATEGORIES, categoryColor } from "../utils/styles";
 
 type CategoryLegendProps = {
   categories: string[];

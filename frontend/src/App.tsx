@@ -1,6 +1,6 @@
 import { Toaster } from "sonner";
 import { AuthProvider } from "./features/auth/AuthContext";
-import { FeaturesDashboard } from "./features/features/FeaturesDashboard";
+import { FeaturesDashboard } from "./features/features";
 
 export default function App() {
   return (

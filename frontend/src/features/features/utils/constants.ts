@@ -1,4 +1,4 @@
-import type { Position, SpatialGeometry } from "../../types/geojson";
+import type { Position, SpatialGeometry } from "../../../types/geojson";
 
 export const DEFAULT_COORDINATES: Position = [100.5018, 13.7563];
 export const DEFAULT_CATEGORY = "manual";

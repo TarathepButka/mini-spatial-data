@@ -1,12 +1,12 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useMemo, useRef, useState, type UIEvent, type WheelEvent } from "react";
-import { getFeatures } from "../../api/features";
-import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import { useDropdownDismiss } from "../../hooks/useDropdownDismiss";
-import type { BoundingBox, SpatialFeature } from "../../types/geojson";
-import { SUGGESTION_DEBOUNCE_MS, SUGGESTION_PAGE_SIZE } from "./constants";
-import { categoryColor, featureCategory } from "./styles";
+import { getFeatures } from "../../../api/features";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useDropdownDismiss } from "../../../hooks/useDropdownDismiss";
+import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
+import { SUGGESTION_DEBOUNCE_MS, SUGGESTION_PAGE_SIZE } from "../utils/constants";
+import { categoryColor, featureCategory } from "../utils/styles";
 
 type SearchAutocompleteProps = {
   search: string;
