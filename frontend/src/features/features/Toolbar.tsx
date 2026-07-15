@@ -5,6 +5,7 @@ import type { BoundingBox, SpatialFeature } from "../../types/geojson";
 import { CategoryFilterDropdown } from "./CategoryFilterDropdown";
 import { ProvinceFilterDropdown } from "./ProvinceFilterDropdown";
 import { SearchAutocomplete } from "./SearchAutocomplete";
+import { ViewModeToggle, type ViewMode } from "./ViewModeToggle";
 
 type ToolbarProps = {
   search: string;
@@ -25,6 +26,8 @@ type ToolbarProps = {
   onAdd: () => void;
   onSeed: () => void;
   seedLoading: boolean;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 };
 
 export function Toolbar({
@@ -46,6 +49,8 @@ export function Toolbar({
   onAdd,
   onSeed,
   seedLoading,
+  viewMode,
+  onViewModeChange,
 }: ToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3">
@@ -74,6 +79,8 @@ export function Toolbar({
         <MapPinned size={16} />
         Viewport
       </label>
+
+      <ViewModeToggle mode={viewMode} onChange={onViewModeChange} />
 
       {canSeed ? (
         <Button

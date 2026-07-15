@@ -16,6 +16,7 @@ import { draftPointGeometry } from "./geometry";
 import { Toolbar } from "./Toolbar";
 import { UserMenu } from "./UserMenu";
 import { featureCategory } from "./styles";
+import type { ViewMode } from "./ViewModeToggle";
 
 export function FeaturesDashboard() {
   const { user, permissionFlags, logout, switchRole } = useAuth();
@@ -41,6 +42,7 @@ export function FeaturesDashboard() {
   const [editingFeature, setEditingFeature] = useState<SpatialFeature | null>(null);
   const [draftGeometry, setDraftGeometry] = useState<SpatialGeometry | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SpatialFeature | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
 
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
 
@@ -192,16 +194,11 @@ export function FeaturesDashboard() {
   );
 
   function handleMapClick(coordinates: [number, number]) {
-    if (!canCreate) {
+    if (!canCreate || !formOpen) {
       return;
     }
 
     setDraftGeometry(draftPointGeometry(coordinates));
-    if (!formOpen) {
-      setEditingFeature(null);
-      setFormMode("create");
-      setFormOpen(true);
-    }
   }
 
   function handleAdd() {
@@ -236,8 +233,15 @@ export function FeaturesDashboard() {
       return;
     }
 
-    setDraftGeometry(geometry);
-    if (geometry && meta?.finished && !formOpen) {
+    // While form is open, update the draft geometry live
+    if (formOpen) {
+      setDraftGeometry(geometry);
+      return;
+    }
+
+    // Drawing just finished — open the create form with the result
+    if (geometry && meta?.finished) {
+      setDraftGeometry(geometry);
       setEditingFeature(null);
       setFormMode("create");
       setFormOpen(true);
@@ -328,8 +332,13 @@ export function FeaturesDashboard() {
   return (
     <main className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-zinc-100 text-zinc-950">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-5 py-4">
-        <div>
-          <h1 className="text-xl font-semibold tracking-normal">Mini Spatial Data Platform</h1>
+        <div className="flex items-center gap-3 select-none">
+          <img src="/logo.png?v=3" alt="Logo" className="h-9 w-9 object-contain" />
+          <h1 className="text-xl tracking-tight">
+            <span className="font-light text-zinc-400">Mini</span>{" "}
+            <span className="font-extrabold text-zinc-900">Spatial</span>{" "}
+            <span className="font-normal text-zinc-600">Data Platform</span>
+          </h1>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
           {user ? <UserMenu user={user} onLogout={logout} onSwitchRole={switchRole} /> : null}
@@ -359,54 +368,67 @@ export function FeaturesDashboard() {
           }
         }}
         seedLoading={seedMutation.isPending}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {error instanceof Error && (
         <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error.message}</div>
       )}
 
-      <section className="relative grid min-h-0 flex-1 grid-cols-[minmax(480px,42%)_1fr] overflow-hidden max-lg:grid-cols-1">
-        <FeaturesTable
-          features={features}
-          meta={meta}
-          page={page}
-          pageSize={pageSize}
-          pageSizeOptions={PAGE_SIZE_OPTIONS}
-          loading={featuresQuery.isFetching}
-          canEdit={canEdit}
-          canDeleteFeature={canDeleteRecord}
-          onPageChange={setPage}
-          onPageSizeChange={(nextPageSize) => {
-            setPageSize(nextPageSize);
-            setPage(1);
-          }}
-          onFocus={focusFeature}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-        <div className="relative min-h-[420px]">
-          <FeatureMap
-            features={mapFeatures}
-            selectedFeatureId={selectedFeatureId}
-            focusRequestId={mapFocusRequestId}
-            draftGeometry={draftGeometry}
-            bboxEnabled={bboxEnabled}
-            canCreate={canCreate}
+      <section
+        className={[
+          "relative grid min-h-0 flex-1 overflow-hidden",
+          viewMode === "split"
+            ? "grid-cols-[minmax(480px,42%)_1fr] max-lg:grid-cols-1"
+            : "grid-cols-1",
+        ].join(" ")}
+      >
+        {viewMode !== "map" && (
+          <FeaturesTable
+            features={features}
+            meta={meta}
+            page={page}
+            pageSize={pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            loading={featuresQuery.isFetching}
             canEdit={canEdit}
             canDeleteFeature={canDeleteRecord}
-            onMapClick={handleMapClick}
-            onDraftGeometryChange={handleDraftGeometryChange}
-            onBoundsChange={handleBoundsChange}
+            onPageChange={setPage}
+            onPageSizeChange={(nextPageSize) => {
+              setPageSize(nextPageSize);
+              setPage(1);
+            }}
+            onFocus={focusFeature}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
-          {mapFeaturesQuery.isFetching && (
-            <div className="absolute left-4 top-4 rounded border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm">
-              Loading viewport
-            </div>
-          )}
-          <CategoryLegend categories={categories} />
-        </div>
+        )}
+        {viewMode !== "table" && (
+          <div className="relative min-h-[420px]">
+            <FeatureMap
+              features={mapFeatures}
+              selectedFeatureId={selectedFeatureId}
+              focusRequestId={mapFocusRequestId}
+              draftGeometry={draftGeometry}
+              bboxEnabled={bboxEnabled}
+              canCreate={canCreate}
+              canEdit={canEdit}
+              canDeleteFeature={canDeleteRecord}
+              onMapClick={handleMapClick}
+              onDraftGeometryChange={handleDraftGeometryChange}
+              onBoundsChange={handleBoundsChange}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+            {mapFeaturesQuery.isFetching && (
+              <div className="absolute left-4 top-4 rounded border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600 shadow-sm">
+                Loading viewport
+              </div>
+            )}
+            <CategoryLegend categories={categories} />
+          </div>
+        )}
 
         <FeatureFormPanel
           open={formOpen}
