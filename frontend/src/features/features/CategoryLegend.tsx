@@ -10,7 +10,7 @@ export function CategoryLegend({ categories }: CategoryLegendProps) {
   return (
     <div
       aria-label="Confidence color legend"
-      className="absolute bottom-4 left-4 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-3 gap-y-2 rounded border border-zinc-200 bg-white/95 px-3 py-2 text-xs text-zinc-700 shadow-sm"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex max-w-[calc(100%-2rem)] flex-wrap items-center gap-x-3 gap-y-2 rounded border border-zinc-200 bg-white/95 px-3 py-2 text-xs text-zinc-700 shadow-sm whitespace-nowrap"
     >
       <span className="font-medium text-zinc-950">Confidence</span>
       {options.map((category) => (
