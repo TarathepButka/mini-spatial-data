@@ -40,6 +40,7 @@ export function FeatureFormPanel({
   const [collectionTouched, setCollectionTouched] = useState(false);
   const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [province, setProvince] = useState("");
+  const [provinceTouched, setProvinceTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [rawGeometry, setRawGeometry] = useState("");
   const [geometryError, setGeometryError] = useState("");
@@ -77,6 +78,7 @@ export function FeatureFormPanel({
     setCollectionTouched(false);
     setCategory(feature?.properties.category ?? feature?.properties.confidence ?? DEFAULT_CATEGORY);
     setProvince(feature?.properties.province ?? "");
+    setProvinceTouched(false);
     setDescription(feature?.properties.description ?? "");
   }, [feature, open]);
 
@@ -101,7 +103,11 @@ export function FeatureFormPanel({
   function submit(event: FormEvent) {
     event.preventDefault();
 
-    if (!geometry || geometryError || collection === "") {
+    setNameTouched(true);
+    setCollectionTouched(true);
+    setProvinceTouched(true);
+
+    if (!geometry || geometryError || name.trim() === "" || collection === "" || province === "") {
       return;
     }
 
@@ -295,18 +301,21 @@ export function FeatureFormPanel({
               )}
             </DropdownMenu>
           </FormField>
-          <FormField label="Province">
+          <FormField label="Province" required error={provinceTouched && province === "" ? "Province is required" : undefined}>
             <DropdownMenu
               containerClassName="relative"
               menuClassName="absolute left-0 z-30 mt-1 w-full overflow-hidden rounded border border-zinc-200 bg-white text-sm text-zinc-700 shadow-lg"
               renderTrigger={({ open, toggle }) => (
                 <button
                   type="button"
-                  onClick={toggle}
+                  onClick={() => {
+                    setProvinceTouched(true);
+                    toggle();
+                  }}
                   className={`${textControlClassName} flex w-full items-center justify-between text-left`}
                 >
                   <span className={`truncate ${province ? "text-zinc-700" : "text-zinc-400"}`}>
-                    {province || "กรุงเทพมหานคร"}
+                    {province}
                   </span>
                   <ChevronDown size={16} className={`shrink-0 text-zinc-500 transition ${open ? "rotate-180" : ""}`} />
                 </button>

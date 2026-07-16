@@ -166,6 +166,7 @@ func (repository *Repository) Update(ctx context.Context, id string, document Fe
 	update := bson.M{
 		"$set": bson.M{
 			"type":       FeatureType,
+			"collection": document.Collection,
 			"geometry":   document.Geometry,
 			"properties": document.Properties,
 			"updatedAt":  document.UpdatedAt,
