@@ -19,6 +19,10 @@
     {
       "key": "token",
       "value": ""
+    },
+    {
+      "key": "invalidToken",
+      "value": "this-is-not-a-valid-token"
     }
   ],
   "auth": {
@@ -120,13 +124,13 @@
           }
         },
         {
-          "name": "Google Login (Error - 400 Empty Credential)",
+          "name": "Google Login (Error - 401 Empty Credential)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('status is 400', function () { pm.response.to.have.status(400); });"
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
                 ],
                 "type": "text/javascript"
               }
@@ -162,30 +166,6 @@
           ],
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/auth/me"
-          }
-        },
-        {
-          "name": "Current User (Error - 401 Unauthorized)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{invalidToken}}"
-              }
-            ],
             "url": "{{baseUrl}}/auth/me"
           }
         },
@@ -558,38 +538,6 @@
                   "raw": "{}"
                 }
               }
-            },
-            {
-              "name": "Create Feature (Error - 401 Unauthorized)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{invalidToken}}"
-                  }
-                ],
-                "url": "{{baseUrl}}/features",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Unauthorized test\"\n  }\n}"
-                }
-              }
             }
           ]
         },
@@ -653,38 +601,6 @@
               }
             },
             {
-              "name": "Update Feature (Error - 401 Unauthorized)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{invalidToken}}"
-                  }
-                ],
-                "url": "{{baseUrl}}/features/{{featureId}}",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Unauthorized test\"\n  }\n}"
-                }
-              }
-            },
-            {
               "name": "Update Feature (Error - 404 Not Found)",
               "event": [
                 {
@@ -718,48 +634,6 @@
           "name": "Delete",
           "item": [
             {
-              "name": "Delete Feature",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "DELETE",
-                "url": "{{baseUrl}}/features/{{featureId}}"
-              }
-            },
-            {
-              "name": "Delete Feature (Error - 401 Unauthorized)",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "DELETE",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{invalidToken}}"
-                  }
-                ],
-                "url": "{{baseUrl}}/features/{{featureId}}"
-              }
-            },
-            {
               "name": "Delete Feature (Error - 404 Not Found)",
               "event": [
                 {
@@ -775,6 +649,24 @@
               "request": {
                 "method": "DELETE",
                 "url": "{{baseUrl}}/features/60a0a0a0a0a0a0a0a0a0a0a0"
+              }
+            },
+            {
+              "name": "Delete Feature",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/features/{{featureId}}"
               }
             }
           ]
@@ -807,6 +699,146 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/seed/vallaris"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Logout & Unauthorized Tests",
+      "item": [
+        {
+          "name": "Logout - Clears Cookie",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('token', '');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout"
+          }
+        },
+        {
+          "name": "Current User (Error - 401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{invalidToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "Create Feature (Error - 401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{invalidToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/features",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Unauthorized test\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Feature (Error - 401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{invalidToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/features/{{featureId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Unauthorized test\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Feature (Error - 401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "auth": { "type": "noauth" },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{invalidToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/features/{{featureId}}"
           }
         }
       ]
