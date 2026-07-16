@@ -278,6 +278,13 @@
               }
             },
             {
+              "name": "Nearby Features (Radius Query)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/features/nearby?lng=100.5018&lat=13.7563&radius=5000"
+              }
+            },
+            {
               "name": "Get Feature (Error - 404 Not Found)",
               "event": [
                 {
@@ -295,18 +302,6 @@
                 "url": "{{baseUrl}}/features/60a0a0a0a0a0a0a0a0a0a0a0"
               }
             },
-            {
-              "name": "Nearby Features (Radius Query)",
-              "request": {
-                "method": "GET",
-                "url": "{{baseUrl}}/features/nearby?lng=100.5018&lat=13.7563&radius=5000"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Error Cases",
-          "item": [
             {
               "name": "List Features (Error - 400 Invalid BBox)",
               "event": [
@@ -382,7 +377,7 @@
           ]
         },
         {
-          "name": "Write",
+          "name": "Create",
           "item": [
             {
               "name": "Create Point Feature",
@@ -391,6 +386,7 @@
                   "listen": "test",
                   "script": {
                     "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
                       "var jsonData = pm.response.json();",
                       "if (jsonData && jsonData.id) {",
                       "    pm.collectionVariables.set(\"featureId\", jsonData.id);",
@@ -422,6 +418,7 @@
                   "listen": "test",
                   "script": {
                     "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
                       "var jsonData = pm.response.json();",
                       "if (jsonData && jsonData.id) {",
                       "    pm.collectionVariables.set(\"featureId\", jsonData.id);",
@@ -453,6 +450,7 @@
                   "listen": "test",
                   "script": {
                     "exec": [
+                      "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
                       "var jsonData = pm.response.json();",
                       "if (jsonData && jsonData.id) {",
                       "    pm.collectionVariables.set(\"featureId\", jsonData.id);",
@@ -478,7 +476,7 @@
               }
             },
             {
-              "name": "Create Feature (Error - 400 Validation Missing Name)",
+              "name": "Create Feature (Error - 400 Missing Name)",
               "event": [
                 {
                   "listen": "test",
@@ -592,9 +590,25 @@
                   "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Unauthorized test\"\n  }\n}"
                 }
               }
-            },
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "item": [
             {
               "name": "Update Feature",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
               "request": {
                 "method": "PUT",
                 "header": [
@@ -697,6 +711,29 @@
                   "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Update non-existent feature\"\n  }\n}"
                 }
               }
+            }
+          ]
+        },
+        {
+          "name": "Delete",
+          "item": [
+            {
+              "name": "Delete Feature",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "url": "{{baseUrl}}/features/{{featureId}}"
+              }
             },
             {
               "name": "Delete Feature (Error - 401 Unauthorized)",
@@ -738,13 +775,6 @@
               "request": {
                 "method": "DELETE",
                 "url": "{{baseUrl}}/features/60a0a0a0a0a0a0a0a0a0a0a0"
-              }
-            },
-            {
-              "name": "Delete Feature",
-              "request": {
-                "method": "DELETE",
-                "url": "{{baseUrl}}/features/{{featureId}}"
               }
             }
           ]
