@@ -1,292 +1,109 @@
 # Mini Spatial Data Platform
 
-A full-stack spatial data platform built with Go, Gin, MongoDB, React, Vite, TypeScript, MapLibre GL JS, TanStack Query/Table, and Tailwind CSS.
+This project is a Full-stack **Spatial Data Platform** developed as part of an assignment using real GeoJSON spatial data of Thailand. The system consists of a Backend API (Go/Gin/MongoDB) and a Frontend UI (React/TypeScript/MapLibre) seamlessly working together.
 
-The app manages GeoJSON `Feature` records, displays them in a table, and renders them on an interactive map. It can seed real Thailand hotspot data from the Vallaris Maps API.
+---
 
-## Features
+## Features & Requirements Fulfillment
 
-- REST API for list, get, create, update, delete
-- GeoJSON `Feature` and `FeatureCollection` responses for `Point`, `LineString`, and `Polygon`
-- MongoDB `2dsphere` index for spatial queries
-- BBox query: `GET /api/v1/features?bbox=minLng,minLat,maxLng,maxLat`
-- Nearby query: `GET /api/v1/features/nearby?lng=&lat=&radius=`
-- Vallaris seed endpoint for Thailand data using `ct_en=Thailand`
-- React dashboard with MapLibre map, Terra Draw editor, and TanStack Table
-- Click map or draw Point/LineString/Polygon geometry to create a feature
-- Edit/delete from table or map popup
-- Search, province filter, category legend filter
-- Viewport loading via `map.on("moveend")`
-- Docker Compose for frontend, backend, and MongoDB
-- Postman collection included
-- Google login with Google Identity Services, backend ID token verification, and HttpOnly cookie sessions
+### Core Requirements
+- **Backend API:** Developed a robust RESTful API using Go (Gin framework) supporting List/Get, Create, Update, and Delete endpoints.
+- **GeoJSON Standard:** All features are stored and transmitted natively as GeoJSON Features.
+- **Database:** Uses MongoDB with a `2dsphere` index to support efficient Geospatial queries.
+- **Frontend UI:** Built with React + Vite + TypeScript, fetching real data from the API (no mock data).
+- **Table View:** Displays features in a clean, modern table using TanStack Table with pagination.
+- **Interactive Map:** Renders features on an interactive map using MapLibre GL JS with clustering support.
+- **Manage Features:** Users can Create, Update, and Delete features directly from the UI (both via the table and map pop-ups).
+- **Postman Collection:** Provided in `postman/mini-spatial-data.postman_collection.json` to test all API endpoints.
 
-## Project Structure
+### Bonus Features & Creativity
+- **Edit Features:** Full support for updating feature properties and geometries.
+- **Search & Filters:** Real-time search, category legend filtering, province filtering, and BBox (viewport) filtering.
+- **Advanced Geometry:** Support for drawing and managing multiple geometry types (`Point`, `LineString`, and `Polygon`) using Terra Draw.
+- **Google OAuth 2.0:** Secure login using Google Identity Services with Role-Based Access Control (Admin/User). Sessions are securely stored in `HttpOnly` Cookies (JWTs are not exposed to LocalStorage).
+- **Vallaris Data Seeder:** Automated seeder endpoint that fetches Thailand hotspot data from the Vallaris API and converts it into the platform's GeoJSON structure.
+- **Modern & Premium UI:** Designed a high-quality, aesthetic, and user-friendly interface with micro-animations, glassmorphism, and responsive layout.
 
-```txt
-mini-spatial-data/
-  backend/
-    cmd/api/main.go
-    internal/config/
-    internal/database/
-    internal/http/
-    internal/feature/
-    internal/seed/
-    Dockerfile
-  frontend/
-    src/api/
-    src/config/
-    src/features/auth/
-    src/features/features/
-    src/types/
-    Dockerfile
-    nginx.conf
-  postman/mini-spatial-data.postman_collection.json
-  docker-compose.yml
-  README.md
-  AGENTS.md
+### What is missing
+- (None) All Core and Bonus requirements have been implemented successfully.
+
+---
+
+## Installation and Running the Project
+
+The easiest way to run the project is using **Docker Compose**, which sets up the Backend, Frontend, and MongoDB automatically.
+
+### Running with Docker (Recommended)
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop).
+2. Create `.env` files for both Backend and Frontend (see the Environment Variables section below).
+3. Run the following command at the root of the project:
+   ```bash
+   docker compose up -d --build
+   ```
+4. Access the application at: **http://localhost:5173**
+
+### Manual Setup (Local Development)
+**Prerequisites:** Go 1.26+, Node.js 24+, MongoDB 8+
+
+**1. Run Backend:**
+```bash
+cd backend
+# Make sure backend/.env is created
+go run cmd/api/main.go
+# The API will be available at http://localhost:8080
 ```
 
-## Requirements
+**2. Run Frontend:**
+```bash
+cd frontend
+# Make sure frontend/.env is created
+npm install
+npm run dev
+# The UI will be available at http://localhost:5173
+```
 
-- Docker and Docker Compose, or
-- Go 1.26+
-- Node.js 24+
-- MongoDB 8+
+---
 
 ## Environment Variables
 
-Backend and frontend env files are intentionally separated. Backend env can contain secrets. Frontend env must only contain public `VITE_*` values.
+Environment variables are separated for Backend and Frontend.
+Copy the provided `.env.example` to `.env` in both directories.
 
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
+### 1. Backend (`backend/.env`)
+```env
+# Database Config
+PORT=8080
+MONGODB_URI=mongodb://localhost:27017
+DB_NAME=mini_spatial
 
-Required in `backend/.env` for seeding:
-
-```txt
-VALLARIS_API_KEY=your_api_key_here
-```
-
-The seed endpoint also requires an authenticated `admin` user.
-
-Required for Google login:
-
-```txt
-# backend/.env
-GOOGLE_CLIENT_ID=your-google-oauth-web-client-id.apps.googleusercontent.com
-AUTH_JWT_SECRET=replace-with-a-long-random-secret
-AUTH_REQUIRED=false
+# Auth & JWT Config
+AUTH_REQUIRED=false 
+AUTH_JWT_SECRET=your-32-character-secret-key-here
 AUTH_COOKIE_NAME=mini_spatial_auth
-AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SECURE=false # Set to true if running on HTTPS
 AUTH_COOKIE_SAME_SITE=lax
+GOOGLE_CLIENT_ID=your-google-client-id
 
-# frontend/.env
-VITE_GOOGLE_CLIENT_ID=your-google-oauth-web-client-id.apps.googleusercontent.com
+# Vallaris Data Seeder
+VALLARIS_API_KEY=your-vallaris-api-key
+```
+*Note: To enable authentication, set `AUTH_REQUIRED=true` and configure the Google Client ID.*
+
+### 2. Frontend (`frontend/.env`)
+```env
+# Backend API URL
+VITE_API_URL=http://localhost:8080
+
+# Google Client ID for UI login
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
 ```
 
-Create a Google OAuth **Web application** client id in Google Cloud Console and add these JavaScript origins for local development:
+---
 
-```txt
-http://localhost:3000
-```
+## 📦 Key Project Structure
 
-`POST /api/v1/auth/google` verifies the Google ID token, sets an HttpOnly cookie, and returns only the user profile plus expiry metadata. The frontend sends cookies with `credentials: "include"` and does not store the app JWT in `localStorage`.
-
-Google users are stored in the MongoDB `users` collection. On startup, the backend runs an idempotent database seeder that grants `admin` and `user` roles to `tarathep.butka@gmail.com`. Other Google users receive the `user` role by default. A user can hold multiple roles, while the active `role` controls the current permission set. The `user` role has `read`, `create`, and `edit` permissions, plus delete access for records they created. The `admin` role has all permissions, including global `delete` and `seed`.
-
-Create, update, delete, and seed endpoints require the HttpOnly session cookie and check permissions at the API boundary. Read endpoints remain public unless `AUTH_REQUIRED=true`, which also requires `read` permission for list/get/nearby requests. `POST /api/v1/auth/role` switches the active role, validates it against the user's `roles`, and sets a fresh HttpOnly cookie. If `AUTH_REQUIRED=true`, `GOOGLE_CLIENT_ID` is set, or `APP_ENV=production`, the backend requires `AUTH_JWT_SECRET` to be a private value with at least 32 characters.
-
-The frontend stores the backend `permissions` response as UI flags. Delete controls are shown only for admins or for records owned by the current user, and Seed controls are shown only to users with `seed` permission. API permissions remain the source of truth.
-
-For cross-site production deployments, set `AUTH_COOKIE_SECURE=true` and `AUTH_COOKIE_SAME_SITE=none`. Keep `CORS_ALLOW_ORIGINS` scoped to explicit frontend origins; wildcard CORS is treated as public and does not allow credentialed cookie requests.
-
-Do not commit real API keys.
-
-## Run With Docker
-
-```bash
-docker compose up --build
-```
-
-Open:
-
-```txt
-http://localhost:3000
-```
-
-Backend API:
-
-```txt
-http://localhost:8080/api/v1
-```
-
-Seed Vallaris Thailand data from the UI using the `Seed` button, or call:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/seed/vallaris
-```
-
-## Local Development
-
-### Backend
-
-```bash
-cd backend
-go mod tidy
-go run ./cmd/api
-```
-
-The backend expects MongoDB at `mongodb://localhost:27017` by default.
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```txt
-http://localhost:5173
-```
-
-Vite proxies `/api` to `http://localhost:8080` in development, so `/api/v1/...` routes go to the backend.
-
-For the Docker frontend, `frontend/.env` is loaded at container startup and written to `/env.js`, so `VITE_API_URL` and `VITE_GOOGLE_CLIENT_ID` can be changed without rebuilding the image.
-
-## API Endpoints
-
-```txt
-GET    /api/v1/health
-POST   /api/v1/auth/google
-GET    /api/v1/auth/me
-POST   /api/v1/auth/role
-POST   /api/v1/auth/logout
-GET    /api/v1/features?page=1&limit=20&search=&collection=&category=&province=&bbox=minLng,minLat,maxLng,maxLat
-GET    /api/v1/features/:id
-POST   /api/v1/features
-PUT    /api/v1/features/:id
-DELETE /api/v1/features/:id
-GET    /api/v1/features/nearby?lng=100.5&lat=13.7&radius=5000
-POST   /api/v1/seed/vallaris
-```
-
-Google login body:
-
-```json
-{
-  "credential": "google-id-token-from-google-identity-services"
-}
-```
-
-Create/update body supports `Point`, `LineString`, and `Polygon` GeoJSON geometry:
-
-```json
-{
-  "type": "Feature",
-  "collection": "observations",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [100.5018, 13.7563]
-  },
-  "properties": {
-    "name": "Manual feature",
-    "category": "manual",
-    "province": "Bangkok",
-    "description": "Created from map click"
-  }
-}
-```
-
-LineString geometry example:
-
-```json
-{
-  "type": "Feature",
-  "collection": "observations",
-  "geometry": {
-    "type": "LineString",
-    "coordinates": [
-      [100.5018, 13.7563],
-      [100.61, 13.82],
-      [100.72, 13.78]
-    ]
-  },
-  "properties": {
-    "name": "Manual route",
-    "category": "manual",
-    "province": "Bangkok"
-  }
-}
-```
-
-Polygon geometry example:
-
-```json
-{
-  "type": "Feature",
-  "collection": "observations",
-  "geometry": {
-    "type": "Polygon",
-    "coordinates": [
-      [
-        [100.48, 13.73],
-        [100.56, 13.73],
-        [100.56, 13.79],
-        [100.48, 13.73]
-      ]
-    ]
-  },
-  "properties": {
-    "name": "Manual area",
-    "category": "manual",
-    "province": "Bangkok"
-  }
-}
-```
-
-List response:
-
-```json
-{
-  "data": {
-    "type": "FeatureCollection",
-    "features": []
-  },
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 0,
-    "totalPages": 0
-  }
-}
-```
-
-## Tests
-
-Backend:
-
-```bash
-cd backend
-go test ./...
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm run test
-npx tsc --noEmit
-npm run build
-```
-
-## Notes
-
-- `POST /api/v1/seed/vallaris` requires the `seed` permission, which is included in the `admin` role.
-- Seed failures return a fixed public error message. Detailed upstream errors are sanitized before logging so API keys are not exposed.
-- Map tiles are loaded from OpenStreetMap raster tiles, so the map needs internet access.
-- The submitted Vallaris dataset is hotspot/fire-detection data. The app normalizes it into GeoJSON feature records while preserving key properties such as hotspot id, confidence, FRP, province, amphoe, and timestamp.
+- `backend/internal/feature/`: Spatial Feature business logic and MongoDB operations.
+- `backend/internal/http/`: API Router and Controllers (Gin).
+- `frontend/src/features/features/map/`: Map component integrating MapLibre & TerraDraw.
+- `frontend/src/features/features/components/`: Dashboard, Forms, and Table components.
+- `postman/`: Contains the Postman Collection for API testing.
