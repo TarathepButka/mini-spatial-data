@@ -3,7 +3,9 @@ import { ChevronDown, ChevronUp, Database, Filter, MapPinned, User } from "lucid
 
 import { Button } from "../../../components/ui/Button";
 import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
+import type { CollectionOption } from "../../../api/features";
 import { CategoryFilterDropdown } from "./CategoryFilterDropdown";
+import { CollectionFilterDropdown } from "./CollectionFilterDropdown";
 import { ProvinceFilterDropdown } from "./ProvinceFilterDropdown";
 import { SearchAutocomplete } from "./SearchAutocomplete";
 import { ViewModeToggle, type ViewMode } from "./ViewModeToggle";
@@ -17,6 +19,9 @@ type ToolbarProps = {
   onProvinceChange: (value: string) => void;
   provinceCounts: ReadonlyMap<string, number>;
   categories: string[];
+  selectedCollections: string[];
+  collectionOptions: CollectionOption[];
+  onCollectionsChange: (collections: string[]) => void;
   selectedCategories: string[];
   onCategoriesChange: (categories: string[]) => void;
   bboxEnabled: boolean;
@@ -40,6 +45,9 @@ export function Toolbar({
   onProvinceChange,
   provinceCounts,
   categories,
+  selectedCollections,
+  collectionOptions,
+  onCollectionsChange,
   selectedCategories,
   onCategoriesChange,
   bboxEnabled,
@@ -59,6 +67,7 @@ export function Toolbar({
   // Count active filters for the badge
   const activeFilterCount =
     (province ? 1 : 0) +
+    (selectedCollections.length > 0 ? 1 : 0) +
     (selectedCategories.length > 0 ? 1 : 0) +
     (bboxEnabled ? 1 : 0) +
     (showOnlyMine ? 1 : 0);
@@ -83,6 +92,7 @@ export function Toolbar({
           search={search}
           province={province}
           selectedCategories={selectedCategories}
+          selectedCollections={selectedCollections}
           bboxEnabled={bboxEnabled}
           bbox={bbox}
           onSearchChange={onSearchChange}
@@ -116,6 +126,9 @@ export function Toolbar({
           onProvinceChange={onProvinceChange}
           provinceCounts={provinceCounts}
           categories={categories}
+          selectedCollections={selectedCollections}
+          collectionOptions={collectionOptions}
+          onCollectionsChange={onCollectionsChange}
           selectedCategories={selectedCategories}
           onCategoriesChange={onCategoriesChange}
           bboxEnabled={bboxEnabled}
@@ -150,6 +163,9 @@ export function Toolbar({
               onProvinceChange={onProvinceChange}
               provinceCounts={provinceCounts}
               categories={categories}
+              selectedCollections={selectedCollections}
+              collectionOptions={collectionOptions}
+              onCollectionsChange={onCollectionsChange}
               selectedCategories={selectedCategories}
               onCategoriesChange={onCategoriesChange}
               bboxEnabled={bboxEnabled}
@@ -176,6 +192,9 @@ type FilterControlsProps = {
   onProvinceChange: (value: string) => void;
   provinceCounts: ReadonlyMap<string, number>;
   categories: string[];
+  selectedCollections: string[];
+  collectionOptions: CollectionOption[];
+  onCollectionsChange: (collections: string[]) => void;
   selectedCategories: string[];
   onCategoriesChange: (categories: string[]) => void;
   bboxEnabled: boolean;
@@ -194,6 +213,9 @@ function FilterControls({
   onProvinceChange,
   provinceCounts,
   categories,
+  selectedCollections,
+  collectionOptions,
+  onCollectionsChange,
   selectedCategories,
   onCategoriesChange,
   bboxEnabled,
@@ -209,6 +231,8 @@ function FilterControls({
   return (
     <>
       <ProvinceFilterDropdown province={province} provinceCounts={provinceCounts} onChange={onProvinceChange} />
+
+      <CollectionFilterDropdown selectedCollections={selectedCollections} collectionOptions={collectionOptions} onChange={onCollectionsChange} />
 
       <CategoryFilterDropdown categories={categories} selectedCategories={selectedCategories} onChange={onCategoriesChange} />
 

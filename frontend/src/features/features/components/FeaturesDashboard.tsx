@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { createFeature, deleteFeature, getFeatures, seedVallaris, updateFeature } from "../../../api/features";
+import { createFeature, deleteFeature, getCollections, getFeatures, seedVallaris, updateFeature } from "../../../api/features";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import type { BoundingBox, FeatureInput, FeaturesResponse, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
 import { useAuth } from "../../auth/AuthContext";
@@ -33,6 +33,7 @@ export function FeaturesDashboard() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const debouncedSearchInput = useDebouncedValue(search, SEARCH_COMMIT_DELAY_MS);
   const [province, setProvince] = useState("");
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [bboxEnabled, setBBoxEnabled] = useState(true);
   const [bbox, setBBox] = useState<BoundingBox | null>(null);
@@ -46,15 +47,23 @@ export function FeaturesDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [showOnlyMine, setShowOnlyMine] = useState(false);
 
+  const collectionParam = selectedCollections.length > 0 ? selectedCollections.join(",") : undefined;
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
 
+  const collectionsQuery = useQuery({
+    queryKey: ["collections"],
+    queryFn: getCollections,
+  });
+  const collectionOptions = collectionsQuery.data ?? [];
+
   const featuresQuery = useQuery({
-    queryKey: ["features", page, pageSize, appliedSearch, province, categoryParam, bboxEnabled, bbox],
+    queryKey: ["features", page, pageSize, appliedSearch, collectionParam, province, categoryParam, bboxEnabled, bbox],
     queryFn: () =>
       getFeatures({
         page,
         limit: pageSize,
         search: appliedSearch || undefined,
+        collection: collectionParam,
         province: province || undefined,
         category: categoryParam,
         bbox: bboxEnabled ? bbox : null,
@@ -65,12 +74,13 @@ export function FeaturesDashboard() {
   const meta = featuresQuery.data?.meta;
 
   const mapFeaturesQuery = useQuery({
-    queryKey: ["features-map", appliedSearch, province, categoryParam, bboxEnabled, bbox],
+    queryKey: ["features-map", appliedSearch, collectionParam, province, categoryParam, bboxEnabled, bbox],
     queryFn: async () => {
       const baseQuery = {
         page: 1,
         limit: 100,
         search: appliedSearch || undefined,
+        collection: collectionParam,
         province: province || undefined,
         bbox: bboxEnabled ? bbox : null,
       };
@@ -392,6 +402,9 @@ export function FeaturesDashboard() {
         onProvinceChange={setProvince}
         provinceCounts={provinceCounts}
         categories={categories}
+        selectedCollections={selectedCollections}
+        collectionOptions={collectionOptions}
+        onCollectionsChange={setSelectedCollections}
         selectedCategories={selectedCategories}
         onCategoriesChange={setSelectedCategories}
         bboxEnabled={bboxEnabled}
@@ -426,6 +439,7 @@ export function FeaturesDashboard() {
         {viewMode !== "map" && (
           <FeaturesTable
             features={filteredFeatures}
+            collectionOptions={collectionOptions}
             meta={filteredMeta}
             page={page}
             pageSize={pageSize}
@@ -447,6 +461,7 @@ export function FeaturesDashboard() {
           <div className="relative h-full min-h-[320px] w-full">
             <FeatureMap
               features={filteredMapFeatures}
+              collectionOptions={collectionOptions}
               selectedFeatureId={selectedFeatureId}
               focusRequestId={mapFocusRequestId}
               draftGeometry={draftGeometry}
@@ -466,7 +481,7 @@ export function FeaturesDashboard() {
                 Loading viewport
               </div>
             )}
-            <CategoryLegend categories={categories} />
+            <CategoryLegend collectionOptions={collectionOptions} />
           </div>
         )}
 
@@ -476,6 +491,7 @@ export function FeaturesDashboard() {
           feature={editingFeature}
           geometry={draftGeometry}
           saving={saving}
+          collectionOptions={collectionOptions}
           onClose={closeForm}
           onGeometryChange={setDraftGeometry}
           onSubmit={handleSubmit}

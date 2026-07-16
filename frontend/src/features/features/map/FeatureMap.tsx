@@ -3,6 +3,7 @@ import maplibregl, { type Map } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import type { BoundingBox, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
+import type { CollectionOption } from "../../../api/features";
 import { LINE_DRAW_FINISH_HINT, LINE_DRAW_INITIAL_HINT } from "../utils/constants";
 import { draftPointGeometry, geometryBounds, geometrySummary } from "../utils/geometry";
 import {
@@ -22,6 +23,7 @@ import type { FeaturePopupCallbacks } from "./mapPopup";
 
 type FeatureMapProps = {
   features: SpatialFeature[];
+  collectionOptions: CollectionOption[];
   selectedFeatureId?: string | null;
   focusRequestId: number;
   draftGeometry: SpatialGeometry | null;
@@ -40,10 +42,12 @@ type FeatureMapProps = {
 type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange"> &
   FeaturePopupCallbacks & {
     canCreate: boolean;
+    collectionOptions: CollectionOption[];
   };
 
 export function FeatureMap({
   features,
+  collectionOptions,
   selectedFeatureId,
   focusRequestId,
   draftGeometry,
@@ -80,10 +84,11 @@ export function FeatureMap({
     onBoundsChange,
     onEdit,
     onDelete,
+    collectionOptions,
   });
 
   featuresRef.current = features;
-  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete };
+  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete, collectionOptions };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -181,7 +186,7 @@ export function FeatureMap({
 
     map.on("load", () => {
       addFeatureLayers(map);
-      updateFeatureSource(map, featuresRef.current);
+      updateFeatureSource(map, featuresRef.current, collectionOptions);
       updateSelectedFilters(map, selectedFeatureId);
       FEATURE_CLICK_LAYERS.forEach((layerId) => {
         map.on("click", layerId, handleFeatureClick);
@@ -220,8 +225,8 @@ export function FeatureMap({
       return;
     }
 
-    updateFeatureSource(map, features);
-  }, [features]);
+    updateFeatureSource(map, features, collectionOptions);
+  }, [features, collectionOptions]);
 
   useEffect(() => {
     const map = mapRef.current;

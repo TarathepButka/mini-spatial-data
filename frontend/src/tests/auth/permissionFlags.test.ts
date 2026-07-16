@@ -88,6 +88,7 @@ function featureOwnedBy(owner: AuthUser): SpatialFeature {
   return {
     id: "feature-id",
     type: "Feature",
+    collection: "observations",
     geometry: { type: "Point", coordinates: [100.5, 13.7] },
     properties: {
       name: "Owned feature",
@@ -103,6 +104,7 @@ function featureWithNoOwner(): SpatialFeature {
   return {
     id: "seed-feature",
     type: "Feature",
+    collection: "observations",
     geometry: { type: "Point", coordinates: [100.5, 13.7] },
     properties: { name: "Seeded feature" },
   };

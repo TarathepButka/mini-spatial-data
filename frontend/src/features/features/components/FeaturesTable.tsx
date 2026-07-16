@@ -4,10 +4,14 @@ import { useMemo } from "react";
 import { DropdownMenu, DropdownMenuItem, DropdownTriggerButton } from "../../../components/ui/DropdownMenu";
 import { IconButton } from "../../../components/ui/IconButton";
 import type { FeaturesMeta, SpatialFeature } from "../../../types/geojson";
+import type { CollectionOption } from "../../../api/features";
+import { collectionColor, collectionLabel, featureCollectionKey } from "../utils/collections";
+import { geometrySummary } from "../utils/geometry";
 import { categoryColor, featureCategory } from "../utils/styles";
 
 type FeaturesTableProps = {
   features: SpatialFeature[];
+  collectionOptions: CollectionOption[];
   meta?: FeaturesMeta;
   page: number;
   pageSize: number;
@@ -26,6 +30,7 @@ const columnHelper = createColumnHelper<SpatialFeature>();
 
 export function FeaturesTable({
   features,
+  collectionOptions,
   meta,
   page,
   pageSize,
@@ -46,6 +51,16 @@ export function FeaturesTable({
         header: "Name",
         cell: (info) => <span className="font-medium text-zinc-950">{info.getValue()}</span>,
       }),
+      columnHelper.accessor((row) => featureCollectionKey(row), {
+        id: "collection",
+        header: "Collection",
+        cell: (info) => (
+          <span className="inline-flex items-center gap-2 rounded border border-zinc-200 px-2 py-1 text-xs">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: collectionColor(info.getValue(), collectionOptions) }} />
+            {collectionLabel(info.getValue(), collectionOptions)}
+          </span>
+        ),
+      }),
       columnHelper.accessor(
         (row) => {
           const { tambol, amphoe, province } = row.properties;
@@ -59,9 +74,10 @@ export function FeaturesTable({
       ),
       columnHelper.accessor(
         (row) => {
-          const { th_date, th_time, createdAt } = row.properties;
+          const { th_date, th_time, createdAt, updatedAt } = row.properties;
           if (th_date && th_time) return `${th_date} ${th_time}`;
           if (th_date) return th_date;
+          if (updatedAt) return new Date(updatedAt as string).toLocaleString("th-TH");
           if (createdAt) return new Date(createdAt as string).toLocaleString("th-TH");
           return "-";
         },
@@ -73,7 +89,7 @@ export function FeaturesTable({
       ),
       columnHelper.accessor((row) => featureCategory(row), {
         id: "category",
-        header: "Category",
+        header: "Status",
         cell: (info) => (
           <span className="inline-flex items-center gap-2 rounded border border-zinc-200 px-2 py-1 text-xs">
             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor(info.getValue()) }} />
@@ -81,10 +97,10 @@ export function FeaturesTable({
           </span>
         ),
       }),
-      columnHelper.accessor((row) => row.properties.frp, {
-        id: "frp",
-        header: "FRP",
-        cell: (info) => <span className="tabular-nums">{formatNumber(info.getValue())}</span>,
+      columnHelper.accessor((row) => featureDetails(row), {
+        id: "details",
+        header: "Details",
+        cell: (info) => <span className="text-zinc-600">{info.getValue()}</span>,
       }),
       columnHelper.display({
         id: "actions",
@@ -237,10 +253,20 @@ function PageSizeDropdown({ value, options, onChange }: { value: number; options
   );
 }
 
-function formatNumber(value: unknown) {
-  if (typeof value !== "number") {
-    return "-";
+function featureDetails(feature: SpatialFeature) {
+  if (featureCollectionKey(feature) === "hotspots") {
+    const details = [
+      typeof feature.properties.frp === "number" ? `FRP ${feature.properties.frp.toFixed(2)}` : "",
+      [feature.properties.satellite, feature.properties.instrument].filter(Boolean).join(" / "),
+      feature.properties.hotspotid,
+    ].filter(Boolean);
+
+    return details.join(" | ") || geometrySummary(feature.geometry);
   }
 
-  return value.toFixed(2);
+  if (typeof feature.properties.description === "string" && feature.properties.description.trim()) {
+    return feature.properties.description.trim();
+  }
+
+  return geometrySummary(feature.geometry);
 }

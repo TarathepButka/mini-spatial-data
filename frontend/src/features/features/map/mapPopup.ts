@@ -1,12 +1,16 @@
 import type { SpatialFeature } from "../../../types/geojson";
+import { collectionLabel, featureCollectionKey } from "../utils/collections";
 import { geometrySummary } from "../utils/geometry";
 import { featureCategory } from "../utils/styles";
+
+import type { CollectionOption } from "../../../api/features";
 
 export type FeaturePopupCallbacks = {
   canEdit: (feature: SpatialFeature) => boolean;
   canDeleteFeature: (feature: SpatialFeature) => boolean;
   onEdit: (feature: SpatialFeature) => void;
   onDelete: (feature: SpatialFeature) => void;
+  collectionOptions?: CollectionOption[];
 };
 
 export function createPopup(feature: SpatialFeature, callbacksRef: { readonly current: FeaturePopupCallbacks }) {
@@ -25,7 +29,7 @@ export function createPopup(feature: SpatialFeature, callbacksRef: { readonly cu
 
   const meta = document.createElement("div");
   meta.className = "text-xs text-zinc-500";
-  meta.textContent = `${featureCategory(feature)} | ${geometrySummary(feature.geometry)}`;
+  meta.textContent = `${collectionLabel(featureCollectionKey(feature), callbacksRef.current.collectionOptions)} | ${featureCategory(feature)} | ${geometrySummary(feature.geometry)}`;
   container.appendChild(meta);
 
   const canDelete = callbacksRef.current.canDeleteFeature(feature);

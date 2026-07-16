@@ -12,6 +12,7 @@ export type FeaturesQuery = {
   page?: number;
   limit?: number;
   search?: string;
+  collection?: string;
   category?: string;
   province?: string;
   bbox?: BoundingBox | null;
@@ -31,6 +32,10 @@ export async function getFeatures(
   params.set("limit", String(query.limit ?? 20));
   if (query.search) {
     params.set("search", query.search);
+  }
+
+  if (query.collection) {
+    params.set("collection", query.collection);
   }
 
   if (query.category) {
@@ -77,4 +82,15 @@ export async function deleteFeature(id: string): Promise<{ deleted: boolean }> {
 
 export async function seedVallaris(): Promise<SeedResult> {
   return request<SeedResult>(`${API_PREFIX}/seed/vallaris`, { method: "POST" });
+}
+
+export type CollectionOption = {
+  id: string;
+  label: string;
+  description: string;
+  color: string;
+};
+
+export async function getCollections(): Promise<CollectionOption[]> {
+  return request<CollectionOption[]>(`${API_PREFIX}/collections`);
 }

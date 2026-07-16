@@ -48,6 +48,7 @@ export type FeatureProperties = {
 export type SpatialFeature = {
   id: string;
   type: "Feature";
+  collection: string;
   geometry: SpatialGeometry;
   properties: FeatureProperties;
 };
@@ -71,6 +72,7 @@ export type FeaturesResponse = {
 
 export type FeatureInput = {
   type: "Feature";
+  collection: string;
   geometry: SpatialGeometry;
   properties: FeatureProperties;
 };

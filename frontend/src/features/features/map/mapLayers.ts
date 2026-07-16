@@ -1,7 +1,9 @@
 import type { FilterSpecification, GeoJSONSource, GeoJSONSourceSpecification, Map, StyleSpecification } from "maplibre-gl";
 import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
+import type { CollectionOption } from "../../../api/features";
 import { MAP_BOUNDS_DEBOUNCE_MS, MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM } from "../utils/constants";
-import { categoryColor, featureCategory } from "../utils/styles";
+import { collectionColor, featureCollectionKey } from "../utils/collections";
+import { featureCategory } from "../utils/styles";
 
 export const FEATURE_SOURCE_ID = "spatial-features";
 export const POINT_LAYER_ID = "spatial-features-point";
@@ -106,14 +108,14 @@ export function addFeatureLayers(map: Map) {
   addSelectedLayers(map);
 }
 
-export function updateFeatureSource(map: Map, features: SpatialFeature[]) {
+export function updateFeatureSource(map: Map, features: SpatialFeature[], collectionOptions: CollectionOption[] = []) {
   const source = map.getSource(FEATURE_SOURCE_ID) as GeoJSONSource | undefined;
 
   if (!source) {
     return;
   }
 
-  source.setData(featureCollection(features) as never);
+  source.setData(featureCollection(features, collectionOptions) as never);
 }
 
 export function updateSelectedFilters(map: Map, selectedFeatureId?: string | null) {
@@ -203,7 +205,7 @@ function selectedFilter(geometryType: "Point" | "LineString" | "Polygon", select
   return ["all", ["==", ["geometry-type"], geometryType], ["==", ["id"], selectedFeatureId ?? "__none__"]];
 }
 
-function featureCollection(features: SpatialFeature[]) {
+function featureCollection(features: SpatialFeature[], collectionOptions: CollectionOption[] = []) {
   return {
     type: "FeatureCollection",
     features: features.map((feature) => ({
@@ -211,7 +213,7 @@ function featureCollection(features: SpatialFeature[]) {
       properties: {
         ...feature.properties,
         _category: featureCategory(feature),
-        _color: categoryColor(featureCategory(feature)),
+        _color: collectionColor(featureCollectionKey(feature), collectionOptions),
       },
     })),
   };

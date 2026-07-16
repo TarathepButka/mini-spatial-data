@@ -6,12 +6,14 @@ import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 import { useDropdownDismiss } from "../../../hooks/useDropdownDismiss";
 import type { BoundingBox, SpatialFeature } from "../../../types/geojson";
 import { SUGGESTION_DEBOUNCE_MS, SUGGESTION_PAGE_SIZE } from "../utils/constants";
-import { categoryColor, featureCategory } from "../utils/styles";
+import { collectionColor, collectionLabel, featureCollectionKey } from "../utils/collections";
+import { featureCategory } from "../utils/styles";
 
 type SearchAutocompleteProps = {
   search: string;
   province: string;
   selectedCategories: string[];
+  selectedCollections: string[];
   bboxEnabled: boolean;
   bbox: BoundingBox | null;
   onSearchChange: (value: string) => void;
@@ -23,6 +25,7 @@ export function SearchAutocomplete({
   search,
   province,
   selectedCategories,
+  selectedCollections,
   bboxEnabled,
   bbox,
   onSearchChange,
@@ -34,12 +37,13 @@ export function SearchAutocomplete({
   const query = search.trim();
   const debouncedQuery = useDebouncedValue(query, SUGGESTION_DEBOUNCE_MS);
   const categoryParam = selectedCategories.length > 0 ? selectedCategories.join(",") : undefined;
+  const collectionParam = selectedCollections.length > 0 ? selectedCollections.join(",") : undefined;
   const showSuggestions = open && debouncedQuery.length > 0;
 
   useDropdownDismiss(containerRef, setOpen);
 
   const suggestionsQuery = useInfiniteQuery({
-    queryKey: ["feature-suggestions", debouncedQuery, province, categoryParam, bboxEnabled, bbox],
+    queryKey: ["feature-suggestions", debouncedQuery, province, collectionParam, categoryParam, bboxEnabled, bbox],
     enabled: showSuggestions,
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
@@ -48,6 +52,7 @@ export function SearchAutocomplete({
         limit: SUGGESTION_PAGE_SIZE,
         search: debouncedQuery,
         province: province || undefined,
+        collection: collectionParam,
         category: categoryParam,
         bbox: bboxEnabled ? bbox : null,
       }),
@@ -135,13 +140,13 @@ export function SearchAutocomplete({
               >
                 <span
                   className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: categoryColor(featureCategory(feature)) }}
+                  style={{ backgroundColor: collectionColor(featureCollectionKey(feature)) }}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-zinc-950">{feature.properties.name}</span>
                   <span className="block truncate text-xs text-zinc-500">{suggestionDetail(feature)}</span>
                 </span>
-                <span className="shrink-0 text-xs text-zinc-400">{featureCategory(feature)}</span>
+                <span className="shrink-0 rounded border border-zinc-200 px-1.5 py-0.5 text-xs text-zinc-500">{collectionLabel(featureCollectionKey(feature))}</span>
               </button>
             ))}
 
