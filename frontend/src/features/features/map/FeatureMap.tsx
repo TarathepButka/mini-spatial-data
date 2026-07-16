@@ -32,7 +32,6 @@ type FeatureMapProps = {
   canEdit: boolean;
   canEditFeature: (feature: SpatialFeature) => boolean;
   canDeleteFeature: (feature: SpatialFeature) => boolean;
-  onMapClick: (coordinates: [number, number]) => void;
   onDraftGeometryChange: (geometry: SpatialGeometry | null, meta?: { finished?: boolean }) => void;
   onBoundsChange: (bbox: BoundingBox) => void;
   onSelectFeature: (feature: SpatialFeature) => void;
@@ -40,7 +39,7 @@ type FeatureMapProps = {
   onDelete: (feature: SpatialFeature) => void;
 };
 
-type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange" | "onSelectFeature"> &
+type CallbackRefs = Pick<FeatureMapProps, "onDraftGeometryChange" | "onBoundsChange" | "onSelectFeature"> &
   FeaturePopupCallbacks & {
     canCreate: boolean;
     collectionOptions: CollectionOption[];
@@ -57,7 +56,6 @@ export function FeatureMap({
   canEdit,
   canEditFeature,
   canDeleteFeature,
-  onMapClick,
   onDraftGeometryChange,
   onBoundsChange,
   onSelectFeature,
@@ -82,7 +80,6 @@ export function FeatureMap({
     canCreate,
     canEdit: canEditFeature,
     canDeleteFeature,
-    onMapClick,
     onDraftGeometryChange,
     onBoundsChange,
     onSelectFeature,
@@ -92,7 +89,7 @@ export function FeatureMap({
   });
 
   featuresRef.current = features;
-  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onSelectFeature, onEdit, onDelete, collectionOptions };
+  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onDraftGeometryChange, onBoundsChange, onSelectFeature, onEdit, onDelete, collectionOptions };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -123,9 +120,10 @@ export function FeatureMap({
         [event.point.x + 5, event.point.y + 5],
       ];
       const renderedFeatures = map.queryRenderedFeatures(bbox, { layers });
+
       for (const renderedFeature of renderedFeatures) {
-        // MapLibre might drop string IDs, so we check properties.id as a fallback
-        const rawId = renderedFeature.id ?? renderedFeature.properties?.id;
+        // MapLibre might drop string IDs, so we check properties._id as a fallback
+        const rawId = renderedFeature.properties?._id ?? renderedFeature.id ?? renderedFeature.properties?.id;
         const featureId = rawId == null ? "" : String(rawId);
         const feature = featuresRef.current.find((item) => item.id === featureId);
 
@@ -170,17 +168,8 @@ export function FeatureMap({
       const feature = handleFeatureClick(event);
       if (feature) {
         openFeaturePopup(feature, event.lngLat);
-
         return;
       }
-
-      if (!callbacksRef.current.canCreate) {
-        return;
-      }
-
-      const coordinates: [number, number] = [event.lngLat.lng, event.lngLat.lat];
-      callbacksRef.current.onMapClick(coordinates);
-      callbacksRef.current.onDraftGeometryChange(draftPointGeometry(coordinates));
     });
 
     const handleLineFinishClick = (event: MouseEvent) => {
@@ -218,7 +207,7 @@ export function FeatureMap({
 
     map.on("load", () => {
       addFeatureLayers(map);
-      updateFeatureSource(map, featuresRef.current, collectionOptions);
+      updateFeatureSource(map, featuresRef.current, callbacksRef.current.collectionOptions);
       updateSelectedFilters(map, selectedFeatureId);
       FEATURE_CLICK_LAYERS.forEach((layerId) => {
         map.on("mouseenter", layerId, setPointer);
@@ -226,6 +215,21 @@ export function FeatureMap({
       });
 
       const draw = createTerraDraw(map);
+      
+      // Patch TerraDraw store to prevent internal crashes from causing a white screen
+      const store = (draw as any)._store;
+      if (store && typeof store.getPropertiesCopy === "function") {
+        const originalGetPropertiesCopy = store.getPropertiesCopy.bind(store);
+        store.getPropertiesCopy = (id: any) => {
+          try {
+            return originalGetPropertiesCopy(id);
+          } catch (e) {
+            console.warn("TerraDraw store.getPropertiesCopy failed for id:", id, e);
+            return {};
+          }
+        };
+      }
+
       drawRef.current = draw;
       draw.on("finish", (id) => syncDraftFromDraw(draw, id as DrawFeatureId));
       draw.on("change", () => syncDraftFromDraw(draw));
@@ -272,15 +276,40 @@ export function FeatureMap({
   }, [selectedFeatureId]);
 
   useEffect(() => {
+    if (!popupRef.current) {
+      return;
+    }
+
+    if (!selectedFeatureId) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      return;
+    }
+
+    const updatedFeature = features.find((item) => item.id === selectedFeatureId);
+    if (!updatedFeature) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      return;
+    }
+
+    popupRef.current.setDOMContent(createPopup(updatedFeature, callbacksRef));
+  }, [features, selectedFeatureId, collectionOptions]);
+
+  useEffect(() => {
     const draw = drawRef.current;
 
-    if (!draw || drawModeRef.current !== "select") {
+    if (!draw) {
       return;
     }
 
     const nextJson = draftGeometry ? JSON.stringify(draftGeometry) : "";
 
     if (nextJson === drawGeometryJsonRef.current) {
+      return;
+    }
+
+    if (draftGeometry !== null && drawModeRef.current !== "select") {
       return;
     }
 
@@ -298,6 +327,10 @@ export function FeatureMap({
         } as GeoJSONStoreFeatures,
       ]);
       draw.selectFeature(featureId);
+    } else {
+      if (drawModeRef.current !== "select") {
+        setDrawMode("select");
+      }
     }
 
     drawGeometryJsonRef.current = nextJson;
@@ -500,10 +533,10 @@ function DrawButton({
       title={title}
       onClick={onClick}
       className={`inline-flex h-10 w-10 items-center justify-center border-r border-zinc-200 text-sm transition last:border-r-0 ${active
-          ? "bg-zinc-950 text-white"
-          : danger
-            ? "bg-white text-red-600 hover:bg-red-50"
-            : "bg-white text-zinc-700 hover:bg-zinc-100"
+        ? "bg-zinc-950 text-white"
+        : danger
+          ? "bg-white text-red-600 hover:bg-red-50"
+          : "bg-white text-zinc-700 hover:bg-zinc-100"
         }`}
     >
       {children}

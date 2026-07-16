@@ -211,7 +211,7 @@ function addSelectedLayers(map: Map) {
 }
 
 function selectedFilter(geometryType: "Point" | "LineString" | "Polygon", selectedFeatureId?: string | null): FilterSpecification {
-  return ["all", ["==", ["geometry-type"], geometryType], ["==", ["id"], selectedFeatureId ?? "__none__"]];
+  return ["all", ["==", ["geometry-type"], geometryType], ["==", ["get", "_id"], selectedFeatureId ?? "__none__"]];
 }
 
 function featureCollection(features: SpatialFeature[], collectionOptions: CollectionOption[] = []) {
@@ -221,7 +221,7 @@ function featureCollection(features: SpatialFeature[], collectionOptions: Collec
       ...feature,
       properties: {
         ...feature.properties,
-        id: feature.id,
+        _id: feature.id,
         _category: featureCategory(feature),
         _color: collectionColor(featureCollectionKey(feature), collectionOptions),
       },
