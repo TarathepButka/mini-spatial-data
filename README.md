@@ -109,7 +109,7 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id
 
 ---
 
-## 📦 Key Project Structure
+## Key Project Structure
 
 - `backend/internal/feature/`: Spatial Feature business logic and MongoDB operations.
 - `backend/internal/http/`: API Router and Controllers (Gin).
