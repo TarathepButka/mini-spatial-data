@@ -91,24 +91,24 @@ export function createPopup(feature: SpatialFeature, callbacksRef: { readonly cu
   }
 
   const actions = document.createElement("div");
-  actions.className = "mt-1 flex gap-2";
-
-  if (canEdit) {
-    const editButton = document.createElement("button");
-    editButton.type = "button";
-    editButton.textContent = "Edit";
-    editButton.className = "rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700";
-    editButton.onclick = () => callbacksRef.current.onEdit(feature);
-    actions.append(editButton);
-  }
+  actions.className = "mt-1 grid grid-cols-2 gap-2 pt-2";
 
   if (canDelete) {
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.textContent = "Delete";
-    deleteButton.className = "rounded border border-red-200 px-2 py-1 text-xs text-red-600";
+    deleteButton.className = "flex w-full items-center justify-center rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-600 shadow-sm ring-1 ring-inset ring-red-200 transition-colors hover:bg-red-50";
     deleteButton.onclick = () => callbacksRef.current.onDelete(feature);
     actions.append(deleteButton);
+  }
+
+  if (canEdit) {
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.textContent = "Edit";
+    editButton.className = "flex w-full items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-zinc-800";
+    editButton.onclick = () => callbacksRef.current.onEdit(feature);
+    actions.append(editButton);
   }
 
   container.appendChild(actions);
