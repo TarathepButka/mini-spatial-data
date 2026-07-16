@@ -49,9 +49,11 @@ The easiest way to run the project is using **Docker Compose**, which sets up th
 ```bash
 cd backend
 # Make sure backend/.env is created
-go run cmd/api/main.go
+go mod tidy
+go run ./cmd/api
 # The API will be available at http://localhost:8080
 ```
+*Note: The backend requires a MongoDB instance running locally at `mongodb://localhost:27017` by default.*
 
 **2. Run Frontend:**
 ```bash
@@ -71,21 +73,28 @@ Copy the provided `.env.example` to `.env` in both directories.
 
 ### 1. Backend (`backend/.env`)
 ```env
-# Database Config
+# Server & Database Config
+APP_ENV=development
 PORT=8080
-MONGODB_URI=mongodb://localhost:27017
-DB_NAME=mini_spatial
+MONGO_URI=mongodb://localhost:27017
+MONGO_DATABASE=mini_spatial_data
+MONGO_COLLECTION=features
+CORS_ALLOW_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Auth & JWT Config
+GOOGLE_CLIENT_ID=your-google-client-id
 AUTH_REQUIRED=false 
 AUTH_JWT_SECRET=your-32-character-secret-key-here
+AUTH_TOKEN_TTL_HOURS=24
 AUTH_COOKIE_NAME=mini_spatial_auth
-AUTH_COOKIE_SECURE=false # Set to true if running on HTTPS
+AUTH_COOKIE_SECURE=false
 AUTH_COOKIE_SAME_SITE=lax
-GOOGLE_CLIENT_ID=your-google-client-id
 
 # Vallaris Data Seeder
+VALLARIS_ITEMS_URL=https://app.vallarismaps.com/core/api/features/1.1/collections/68db604f6d325faa74ba5bbd/items
 VALLARIS_API_KEY=your-vallaris-api-key
+VALLARIS_IMPORT_LIMIT=100
+HTTP_TIMEOUT_SECONDS=30
 ```
 *Note: To enable authentication, set `AUTH_REQUIRED=true` and configure the Google Client ID.*
 
