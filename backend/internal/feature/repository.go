@@ -13,11 +13,15 @@ import (
 )
 
 type Repository struct {
-	collection *mongo.Collection
+	collection            *mongo.Collection
+	collectionsCollection *mongo.Collection
 }
 
-func NewRepository(collection *mongo.Collection) *Repository {
-	return &Repository{collection: collection}
+func NewRepository(collection *mongo.Collection, collectionsCollection *mongo.Collection) *Repository {
+	return &Repository{
+		collection:            collection,
+		collectionsCollection: collectionsCollection,
+	}
 }
 
 func (repository *Repository) EnsureIndexes(ctx context.Context) error {
@@ -45,6 +49,14 @@ func (repository *Repository) EnsureIndexes(ctx context.Context) error {
 		{
 			Keys:    bson.D{{Key: "properties.confidence", Value: 1}},
 			Options: options.Index().SetName("confidence"),
+		},
+		{
+			Keys: bson.D{
+				{Key: "collection", Value: 1},
+				{Key: "properties.category", Value: 1},
+				{Key: "properties.province", Value: 1},
+			},
+			Options: options.Index().SetName("collection_category_province"),
 		},
 	}
 	_, err := repository.collection.Indexes().CreateMany(ctx, models)
@@ -230,25 +242,29 @@ func (repository *Repository) UpsertManyBySourceID(ctx context.Context, document
 
 func BuildFilter(params ListParams) bson.M {
 	filter := bson.M{}
+	clauses := bson.A{}
 
 	if params.Search != "" {
 		pattern := regexp.QuoteMeta(params.Search)
 		regex := bson.Regex{Pattern: pattern, Options: "i"}
-		filter["$or"] = bson.A{
+		clauses = append(clauses, bson.M{"$or": bson.A{
 			bson.M{"properties.name": regex},
 			bson.M{"properties.hotspotid": regex},
 			bson.M{"properties.province": regex},
 			bson.M{"properties.amphoe": regex},
 			bson.M{"properties.tambol": regex},
 			bson.M{"properties.village": regex},
+		}})
+	}
+
+	if params.Collection != "" {
+		if clause := collectionFilter(splitParamList(params.Collection)); len(clause) > 0 {
+			clauses = append(clauses, clause)
 		}
 	}
 
 	if params.Category != "" {
-		categories := splitParamList(params.Category)
-		if len(categories) == 1 {
-			filter["properties.category"] = categories[0]
-		} else if len(categories) > 1 {
+		if categories := splitParamList(params.Category); len(categories) > 0 {
 			filter["properties.category"] = bson.M{"$in": categories}
 		}
 	}
@@ -265,8 +281,60 @@ func BuildFilter(params ListParams) bson.M {
 		}
 	}
 
+	if len(clauses) == 1 {
+		for key, value := range clauses[0].(bson.M) {
+			filter[key] = value
+		}
+	} else if len(clauses) > 1 {
+		filter["$and"] = clauses
+	}
+
 	return filter
 }
+
+func collectionFilter(collections []string) bson.M {
+	clauses := bson.A{}
+	for _, collection := range collections {
+		switch collection {
+		case CollectionHotspots:
+			clauses = append(clauses,
+				bson.M{"collection": CollectionHotspots},
+				bson.M{"$and": bson.A{
+					bson.M{"collection": bson.M{"$exists": false}},
+					bson.M{"$or": bson.A{
+						bson.M{"properties.source": "vallaris"},
+						bson.M{"sourceId": bson.M{"$exists": true, "$ne": ""}},
+					}},
+				}},
+			)
+		case CollectionObservations:
+			clauses = append(clauses,
+				bson.M{"collection": CollectionObservations},
+				bson.M{"$and": bson.A{
+					bson.M{"collection": bson.M{"$exists": false}},
+					bson.M{"properties.source": bson.M{"$ne": "vallaris"}},
+					bson.M{"$or": bson.A{
+						bson.M{"sourceId": bson.M{"$exists": false}},
+						bson.M{"sourceId": ""},
+					}},
+				}},
+			)
+		default:
+			clauses = append(clauses, bson.M{"collection": collection})
+		}
+	}
+
+	if len(clauses) == 0 {
+		return bson.M{}
+	}
+
+	if len(clauses) == 1 {
+		return clauses[0].(bson.M)
+	}
+
+	return bson.M{"$or": clauses}
+}
+
 
 func bboxPolygon(bbox BBox) bson.M {
 	return bson.M{
@@ -292,4 +360,53 @@ func splitParamList(raw string) []string {
 	}
 
 	return items
+}
+
+func (repository *Repository) SeedCollections(ctx context.Context, seeds []CollectionInfo) error {
+	for _, seed := range seeds {
+		filter := bson.M{"_id": seed.ID}
+		update := bson.M{
+			"$set": bson.M{
+				"label":       seed.Label,
+				"description": seed.Description,
+				"color":       seed.Color,
+			},
+		}
+		opts := options.UpdateOne().SetUpsert(true)
+		_, err := repository.collectionsCollection.UpdateOne(ctx, filter, update, opts)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (repository *Repository) ListCollections(ctx context.Context) ([]CollectionInfo, error) {
+	cursor, err := repository.collectionsCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var dbCollections []struct {
+		ID          string `bson:"_id"`
+		Label       string `bson:"label"`
+		Description string `bson:"description"`
+		Color       string `bson:"color"`
+	}
+	if err := cursor.All(ctx, &dbCollections); err != nil {
+		return nil, err
+	}
+
+	collections := make([]CollectionInfo, len(dbCollections))
+	for i, db := range dbCollections {
+		collections[i] = CollectionInfo{
+			ID:          db.ID,
+			Label:       db.Label,
+			Description: db.Description,
+			Color:       db.Color,
+		}
+	}
+
+	return collections, nil
 }

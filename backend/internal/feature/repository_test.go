@@ -36,6 +36,40 @@ func TestBuildFilterSupportsCategoryProvinceAndBBox(t *testing.T) {
 	}
 }
 
+func TestBuildFilterSupportsCollection(t *testing.T) {
+	filter := BuildFilter(ListParams{
+		Collection: "hotspots,hospitals",
+	})
+
+	collection, ok := filter["$or"].(bson.A)
+	if !ok || len(collection) == 0 {
+		t.Fatalf("expected collection filter with legacy fallback under $or, got %#v", filter)
+	}
+}
+
+func TestBuildFilterSupportsCollectionAndSearch(t *testing.T) {
+	filter := BuildFilter(ListParams{
+		Search:     "some-search",
+		Collection: "hotspots,hospitals",
+	})
+
+	andClauses, ok := filter["$and"].(bson.A)
+	if !ok || len(andClauses) != 2 {
+		t.Fatalf("expected search and collection clauses under $and, got %#v", filter)
+	}
+}
+
+func TestBuildFilterSupportsLegacyCollectionFallback(t *testing.T) {
+	filter := BuildFilter(ListParams{
+		Collection: "hotspots",
+	})
+
+	collection, ok := filter["$or"].(bson.A)
+	if !ok || len(collection) == 0 {
+		t.Fatalf("expected hotspot collection filter with legacy fallback, got %#v", filter)
+	}
+}
+
 func TestBuildFilterSupportsSearch(t *testing.T) {
 	filter := BuildFilter(ListParams{Search: "hotspot"})
 	if _, ok := filter["$or"].(bson.A); !ok {

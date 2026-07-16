@@ -1,6 +1,7 @@
 package feature
 
 import (
+	"strings"
 	"time"
 
 	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
@@ -20,6 +21,7 @@ type Geometry = geo.Geometry
 type Feature struct {
 	ID         string         `json:"id"`
 	Type       string         `json:"type"`
+	Collection string         `json:"collection"`
 	Geometry   Geometry       `json:"geometry"`
 	Properties map[string]any `json:"properties"`
 }
@@ -39,6 +41,7 @@ type FeatureDocument struct {
 	ID         bson.ObjectID  `bson:"_id,omitempty"`
 	SourceID   string         `bson:"sourceId,omitempty"`
 	Type       string         `bson:"type"`
+	Collection string         `bson:"collection,omitempty"`
 	Geometry   Geometry       `bson:"geometry"`
 	Properties map[string]any `bson:"properties"`
 	CreatedBy  *Actor         `bson:"createdBy,omitempty"`
@@ -48,6 +51,10 @@ type FeatureDocument struct {
 
 func (document FeatureDocument) ToFeature() Feature {
 	properties := copyProperties(document.Properties)
+	collection := strings.TrimSpace(document.Collection)
+	if collection == "" {
+		collection = LegacyCollectionForDocument(document)
+	}
 	if document.CreatedAt.IsZero() == false {
 		properties["createdAt"] = document.CreatedAt.UTC().Format(time.RFC3339)
 	}
@@ -67,6 +74,7 @@ func (document FeatureDocument) ToFeature() Feature {
 	return Feature{
 		ID:         document.ID.Hex(),
 		Type:       FeatureType,
+		Collection: collection,
 		Geometry:   document.Geometry,
 		Properties: properties,
 	}

@@ -5,6 +5,7 @@ import "github.com/example/mini-spatial-data/backend/internal/shared/api"
 
 type FeatureInput struct {
 	Type       string         `json:"type"`
+	Collection string         `json:"collection"`
 	Geometry   Geometry       `json:"geometry"`
 	Properties map[string]any `json:"properties"`
 }
@@ -13,6 +14,7 @@ type ListParams struct {
 	Page     int
 	Limit    int
 	Search   string
+	Collection string
 	Category string
 	Province string
 	BBox     *BBox

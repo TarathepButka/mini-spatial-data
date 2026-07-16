@@ -17,6 +17,7 @@ func TestRegisterRoutesExposesFeaturesOnly(t *testing.T) {
 	}
 
 	expectedRoutes := []string{
+		"GET /collections",
 		"GET /features",
 		"GET /features/nearby",
 		"GET /features/:id",

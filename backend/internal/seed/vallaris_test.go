@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/example/mini-spatial-data/backend/internal/feature"
 	"github.com/example/mini-spatial-data/backend/internal/shared/geo"
 )
 
@@ -28,6 +29,10 @@ func TestNormalizeVallarisFeature(t *testing.T) {
 
 	if document.SourceID != "source-1" {
 		t.Fatalf("unexpected source id: %s", document.SourceID)
+	}
+
+	if document.Collection != feature.CollectionHotspots {
+		t.Fatalf("expected hotspot collection, got %s", document.Collection)
 	}
 
 	if document.Properties["category"] != "nominal" {

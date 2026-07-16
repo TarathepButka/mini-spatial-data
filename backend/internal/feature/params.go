@@ -37,10 +37,16 @@ func NewListParams(values url.Values) (ListParams, error) {
 		return ListParams{}, err
 	}
 
+	collection := strings.TrimSpace(values.Get("collection"))
+	if err := validateCollectionParam(collection); err != nil {
+		return ListParams{}, err
+	}
+
 	return ListParams{
 		Page:     page,
 		Limit:    limit,
 		Search:   strings.TrimSpace(values.Get("search")),
+		Collection: collection,
 		Category: strings.TrimSpace(values.Get("category")),
 		Province: strings.TrimSpace(values.Get("province")),
 		BBox:     bbox,
@@ -126,6 +132,19 @@ func ParseBBox(raw string) (*BBox, error) {
 	return bbox, nil
 }
 
+func validateCollectionParam(raw string) error {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+
+	for _, collection := range splitParamList(raw) {
+		if !IsValidCollection(collection) {
+			return ValidationError{Message: fmt.Sprintf("collection must be one of %s", strings.Join(ValidCollections, ", "))}
+		}
+	}
+
+	return nil
+}
 func parsePositiveInt(raw string, fallback int, min int, max int) (int, error) {
 	if strings.TrimSpace(raw) == "" {
 		return fallback, nil

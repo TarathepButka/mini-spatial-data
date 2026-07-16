@@ -10,6 +10,7 @@ func TestNewListParamsParsesPaginationAndBBox(t *testing.T) {
 	values.Set("page", "2")
 	values.Set("limit", "25")
 	values.Set("search", "hotspot")
+	values.Set("collection", "hotspots,hospitals")
 	values.Set("category", "low,nominal")
 	values.Set("province", "Suphan Buri")
 	values.Set("bbox", "99.5,13.1,101.2,15.4")
@@ -23,11 +24,24 @@ func TestNewListParamsParsesPaginationAndBBox(t *testing.T) {
 		t.Fatalf("unexpected pagination: %#v", params)
 	}
 
+	if params.Collection != "hotspots,hospitals" {
+		t.Fatalf("unexpected collection: %s", params.Collection)
+	}
+
 	if params.BBox == nil || params.BBox.MinLng != 99.5 || params.BBox.MaxLat != 15.4 {
 		t.Fatalf("unexpected bbox: %#v", params.BBox)
 	}
 }
 
+func TestNewListParamsRejectsUnknownCollection(t *testing.T) {
+	values := url.Values{}
+	values.Set("collection", "roads")
+
+	_, err := NewListParams(values)
+	if err == nil {
+		t.Fatal("expected invalid collection error")
+	}
+}
 func TestParseBBoxRejectsInvalidOrder(t *testing.T) {
 	_, err := ParseBBox("101,15,100,14")
 	if err == nil {

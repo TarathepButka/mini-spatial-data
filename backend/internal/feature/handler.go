@@ -25,6 +25,7 @@ func NewHandler(service *Service) *Handler {
 }
 
 func RegisterRoutes(router gin.IRouter, handler *Handler, permissions RoutePermissions) {
+	router.GET("/collections", withMiddleware(permissions.Read, handler.ListCollections)...)
 	registerResourceRoutes(router.Group("/features"), handler, permissions)
 }
 
@@ -203,6 +204,10 @@ func writeError(c *gin.Context, err error) {
 	}
 
 	api.SendError(c, status, code, message)
+}
+
+func (handler *Handler) ListCollections(c *gin.Context) {
+	c.JSON(http.StatusOK, CollectionOptions)
 }
 
 func withMiddleware(middleware gin.HandlerFunc, handler gin.HandlerFunc) []gin.HandlerFunc {

@@ -269,6 +269,11 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 		return FeatureDocument{}, ValidationError{Message: "type must be Feature"}
 	}
 
+	collection, err := NormalizeCollection(input.Collection)
+	if err != nil {
+		return FeatureDocument{}, err
+	}
+
 	geometry, err := geo.NormalizeGeometry(input.Geometry)
 	if err != nil {
 		return FeatureDocument{}, err
@@ -312,6 +317,7 @@ func NormalizeInput(input FeatureInput, now time.Time) (FeatureDocument, error) 
 
 	return FeatureDocument{
 		Type:       FeatureType,
+		Collection: collection,
 		Geometry:   geometry,
 		Properties: properties,
 		CreatedAt:  now,
@@ -342,4 +348,8 @@ func stringProperty(properties map[string]any, key string) string {
 	}
 
 	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func (service *Service) ListCollections(ctx context.Context) ([]CollectionInfo, error) {
+	return service.repository.ListCollections(ctx)
 }

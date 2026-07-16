@@ -8,6 +8,7 @@ import (
 func TestNormalizeInputRequiresName(t *testing.T) {
 	_, err := NormalizeInput(FeatureInput{
 		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry:   Geometry{Type: "Point", Coordinates: []float64{100.5, 13.7}},
 		Properties: map[string]any{},
 	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))
@@ -19,6 +20,7 @@ func TestNormalizeInputRequiresName(t *testing.T) {
 func TestNormalizeInputDefaultsCategory(t *testing.T) {
 	document, err := NormalizeInput(FeatureInput{
 		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry:   Geometry{Type: "Point", Coordinates: []float64{100.5, 13.7}},
 		Properties: map[string]any{"name": "Manual point"},
 	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))
@@ -31,9 +33,32 @@ func TestNormalizeInputDefaultsCategory(t *testing.T) {
 	}
 }
 
+func TestNormalizeInputRejectsMissingCollection(t *testing.T) {
+	_, err := NormalizeInput(FeatureInput{
+		Type:       "Feature",
+		Geometry:   Geometry{Type: "Point", Coordinates: []float64{100.5, 13.7}},
+		Properties: map[string]any{"name": "Manual point"},
+	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
+
+func TestNormalizeInputRejectsUnknownCollection(t *testing.T) {
+	_, err := NormalizeInput(FeatureInput{
+		Type:       "Feature",
+		Collection: "roads",
+		Geometry:   Geometry{Type: "Point", Coordinates: []float64{100.5, 13.7}},
+		Properties: map[string]any{"name": "Manual point"},
+	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
 func TestNormalizeInputDropsClientControlledOwnerFields(t *testing.T) {
 	document, err := NormalizeInput(FeatureInput{
-		Type:     "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{Type: "Point", Coordinates: []float64{100.5, 13.7}},
 		Properties: map[string]any{
 			"name":      "Manual point",
@@ -54,6 +79,17 @@ func TestNormalizeInputDropsClientControlledOwnerFields(t *testing.T) {
 	}
 }
 
+func TestFeatureDocumentToFeatureBackfillsLegacyCollection(t *testing.T) {
+	hotspot := FeatureDocument{SourceID: "vallaris-1", Properties: map[string]any{"name": "Legacy hotspot", "source": "vallaris"}}
+	if hotspot.ToFeature().Collection != CollectionHotspots {
+		t.Fatalf("expected legacy Vallaris document to become hotspots, got %s", hotspot.ToFeature().Collection)
+	}
+
+	observation := FeatureDocument{Properties: map[string]any{"name": "Legacy manual"}}
+	if observation.ToFeature().Collection != CollectionObservations {
+		t.Fatalf("expected legacy manual document to become observations, got %s", observation.ToFeature().Collection)
+	}
+}
 func TestSameActorMatchesSubjectOrEmail(t *testing.T) {
 	if !sameActor(&Actor{Subject: "google-subject"}, &Actor{Subject: "google-subject"}) {
 		t.Fatal("expected matching subjects to be the same actor")
@@ -70,7 +106,8 @@ func TestSameActorMatchesSubjectOrEmail(t *testing.T) {
 
 func TestNormalizeInputSupportsLineString(t *testing.T) {
 	document, err := NormalizeInput(FeatureInput{
-		Type: "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{
 			Type: GeometryTypeLineString,
 			Coordinates: [][]float64{
@@ -91,7 +128,8 @@ func TestNormalizeInputSupportsLineString(t *testing.T) {
 
 func TestNormalizeInputRemovesConsecutiveDuplicateLineStringPositions(t *testing.T) {
 	document, err := NormalizeInput(FeatureInput{
-		Type: "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{
 			Type: GeometryTypeLineString,
 			Coordinates: [][]float64{
@@ -118,7 +156,8 @@ func TestNormalizeInputRemovesConsecutiveDuplicateLineStringPositions(t *testing
 
 func TestNormalizeInputSupportsPolygon(t *testing.T) {
 	document, err := NormalizeInput(FeatureInput{
-		Type: "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{
 			Type: GeometryTypePolygon,
 			Coordinates: [][][]float64{{
@@ -142,6 +181,7 @@ func TestNormalizeInputSupportsPolygon(t *testing.T) {
 func TestNormalizeInputRejectsInvalidLongitude(t *testing.T) {
 	_, err := NormalizeInput(FeatureInput{
 		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry:   Geometry{Type: GeometryTypePoint, Coordinates: []float64{181, 13.7}},
 		Properties: map[string]any{"name": "Invalid point"},
 	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))
@@ -152,7 +192,8 @@ func TestNormalizeInputRejectsInvalidLongitude(t *testing.T) {
 
 func TestNormalizeInputRejectsShortLineString(t *testing.T) {
 	_, err := NormalizeInput(FeatureInput{
-		Type: "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{
 			Type:        GeometryTypeLineString,
 			Coordinates: [][]float64{{100.5, 13.7}},
@@ -166,7 +207,8 @@ func TestNormalizeInputRejectsShortLineString(t *testing.T) {
 
 func TestNormalizeInputRejectsUnclosedPolygon(t *testing.T) {
 	_, err := NormalizeInput(FeatureInput{
-		Type: "Feature",
+		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry: Geometry{
 			Type: GeometryTypePolygon,
 			Coordinates: [][][]float64{{
@@ -186,6 +228,7 @@ func TestNormalizeInputRejectsUnclosedPolygon(t *testing.T) {
 func TestNormalizeInputRejectsUnsupportedGeometryType(t *testing.T) {
 	_, err := NormalizeInput(FeatureInput{
 		Type:       "Feature",
+		Collection: CollectionObservations,
 		Geometry:   Geometry{Type: "MultiPolygon", Coordinates: []any{}},
 		Properties: map[string]any{"name": "Invalid geometry"},
 	}, time.Date(2026, 7, 9, 0, 0, 0, 0, time.UTC))

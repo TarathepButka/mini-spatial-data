@@ -292,6 +292,7 @@ func NormalizeVallarisFeature(sourceID string, geometry geo.Geometry, properties
 	return feature.FeatureDocument{
 		SourceID:   sourceID,
 		Type:       feature.FeatureType,
+		Collection: feature.CollectionHotspots,
 		Geometry:   geometry,
 		Properties: normalized,
 		CreatedAt:  now,

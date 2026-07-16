@@ -39,9 +39,16 @@ func main() {
 		}
 	}()
 
-	featureRepository := feature.NewRepository(mongoDatabase.Collection(cfg.MongoCollection))
+	featureRepository := feature.NewRepository(
+		mongoDatabase.Collection(cfg.MongoCollection),
+		mongoDatabase.Collection("collections"),
+	)
 	if err := featureRepository.EnsureIndexes(ctx); err != nil {
 		log.Fatalf("ensure feature indexes: %v", err)
+	}
+
+	if err := featureRepository.SeedCollections(ctx, feature.CollectionOptions); err != nil {
+		log.Fatalf("seed collections: %v", err)
 	}
 
 	authRepository := auth.NewRepository(mongoDatabase.Collection(cfg.MongoUsersCollection))
