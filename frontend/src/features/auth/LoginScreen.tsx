@@ -1,4 +1,4 @@
-import { MapPinned } from "lucide-react";
+
 import { useEffect, useRef, useState } from "react";
 import { appConfig } from "../../config/runtime";
 import { useAuth } from "./AuthContext";
@@ -136,16 +136,11 @@ export function LoginScreen({ loading }: { loading: boolean }) {
       <section className="w-full max-w-110 rounded-md border border-zinc-200 bg-white px-6 py-7 shadow-xl sm:px-8 sm:py-8">
         <div className="mx-auto grid w-full max-w-90 gap-6">
           <div className="flex items-center gap-4">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-zinc-950 text-white">
-              <MapPinned size={22} />
-            </div>
+            <img src="/logo.png?v=3" alt="Logo" className="h-12 w-12 object-contain" />
             <div className="min-w-0">
               <h1 className="text-[21px] font-semibold leading-tight">
                 Mini Spatial Data
               </h1>
-              <p className="mt-1.5 text-sm leading-5 text-zinc-500">
-                Sign in with Google.
-              </p>
             </div>
           </div>
 
