@@ -172,6 +172,21 @@ export function FeaturesDashboard() {
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: FeatureInput }) => updateFeature(id, input),
     onSuccess: (feature) => {
+      // Optimistic cache update so popup updates instantly
+      const updateCache = (oldData: any) => {
+        if (!oldData || !oldData.data || !oldData.data.features) return oldData;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            features: oldData.data.features.map((f: SpatialFeature) => (f.id === feature.id ? feature : f)),
+          },
+        };
+      };
+
+      queryClient.setQueriesData({ queryKey: ["features"] }, updateCache);
+      queryClient.setQueriesData({ queryKey: ["features-map"] }, updateCache);
+
       closeForm();
       focusFeature(feature);
       invalidateFeatureQueries();
@@ -190,6 +205,11 @@ export function FeaturesDashboard() {
     mutationFn: deleteFeature,
     onSuccess: () => {
       const deletedName = deleteTarget?.properties.name;
+      
+      if (editingFeature?.id === deleteTarget?.id) {
+        closeForm();
+      }
+      
       setSelectedFeatureId(null);
       setDeleteTarget(null);
       invalidateFeatureQueries();
@@ -246,13 +266,6 @@ export function FeaturesDashboard() {
     [features, mapFeatures],
   );
 
-  function handleMapClick(coordinates: [number, number]) {
-    if (!canCreate || !formOpen) {
-      return;
-    }
-
-    setDraftGeometry(draftPointGeometry(coordinates));
-  }
 
 
 
@@ -474,7 +487,6 @@ export function FeaturesDashboard() {
               canEdit={canEditAny}
               canEditFeature={canEditRecord}
               canDeleteFeature={canDeleteRecord}
-              onMapClick={handleMapClick}
               onDraftGeometryChange={handleDraftGeometryChange}
               onBoundsChange={handleBoundsChange}
               onSelectFeature={selectMapFeature}

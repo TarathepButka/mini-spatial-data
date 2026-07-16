@@ -48,8 +48,15 @@ export function FeaturesTable({
     () => [
       columnHelper.accessor((row) => row.properties.name, {
         id: "name",
-        header: "Name",
-        cell: (info) => <span className="font-medium text-zinc-950">{info.getValue()}</span>,
+        header: "Name / ID",
+        cell: (info) => (
+          <div className="flex flex-col">
+            <span className="font-medium text-zinc-950">{info.getValue() || "-"}</span>
+            <span className="font-mono text-[10px] text-zinc-400" title={info.row.original.id}>
+              {info.row.original.id.length > 20 ? info.row.original.id.substring(0, 20) + "..." : info.row.original.id}
+            </span>
+          </div>
+        ),
       }),
       columnHelper.accessor((row) => featureCollectionKey(row), {
         id: "collection",
@@ -100,7 +107,7 @@ export function FeaturesTable({
       columnHelper.accessor((row) => featureDetails(row), {
         id: "details",
         header: "Details",
-        cell: (info) => <span className="text-zinc-600">{info.getValue()}</span>,
+        cell: ({ row }) => <FeatureDetailsCell feature={row.original} />,
       }),
       columnHelper.display({
         id: "actions",
@@ -159,12 +166,17 @@ export function FeaturesTable({
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full border-collapse text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-zinc-50 text-xs uppercase text-zinc-500">
+        <table className="w-full border-separate border-spacing-0 text-left text-sm">
+          <thead className="text-xs uppercase text-zinc-500">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="border-b border-zinc-200 px-4 py-3 font-semibold">
+                {headerGroup.headers.map((header, index) => (
+                  <th
+                    key={header.id}
+                    className={`sticky top-0 border-b border-zinc-200 bg-zinc-50 px-4 py-3 font-semibold ${
+                      index === 0 ? "left-0 z-20 border-r" : "z-10"
+                    }`}
+                  >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
@@ -173,9 +185,14 @@ export function FeaturesTable({
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} onClick={() => onFocus(row.original)} className="cursor-pointer border-b border-zinc-100 hover:bg-zinc-50">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 align-middle text-zinc-700">
+              <tr key={row.id} onClick={() => onFocus(row.original)} className="group cursor-pointer hover:bg-zinc-50">
+                {row.getVisibleCells().map((cell, index) => (
+                  <td
+                    key={cell.id}
+                    className={`border-b border-zinc-100 px-4 py-3 align-middle text-zinc-700 ${
+                      index === 0 ? "sticky left-0 z-10 border-r bg-white group-hover:bg-zinc-50" : ""
+                    }`}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -183,7 +200,7 @@ export function FeaturesTable({
             ))}
             {!loading && features.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={columns.length} className="border-b border-zinc-100 px-4 py-12 text-center text-sm text-zinc-500">
                   No records
                 </td>
               </tr>
@@ -269,4 +286,43 @@ function featureDetails(feature: SpatialFeature) {
   }
 
   return geometrySummary(feature.geometry);
+}
+
+function FeatureDetailsCell({ feature }: { feature: SpatialFeature }) {
+  const isHotspot = featureCollectionKey(feature) === "hotspots";
+  const desc = feature.properties.description?.trim();
+
+  if (isHotspot) {
+    const frp = typeof feature.properties.frp === "number" ? feature.properties.frp.toFixed(2) : null;
+    const sat = [feature.properties.satellite, feature.properties.instrument].filter(Boolean).join(" / ");
+    
+    return (
+      <div className="flex flex-col gap-1.5">
+        {(frp || sat) ? (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            {frp ? <span className="rounded bg-orange-50 px-1.5 py-0.5 font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20">FRP {frp}</span> : null}
+            {sat ? <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 ring-1 ring-inset ring-blue-600/20">{sat}</span> : null}
+          </div>
+        ) : null}
+        
+        {desc ? (
+          <div className="line-clamp-2 max-w-xs text-xs text-zinc-600" title={desc}>
+            {desc}
+          </div>
+        ) : null}
+
+        {!frp && !sat && !desc ? <span className="text-xs text-zinc-500">{geometrySummary(feature.geometry)}</span> : null}
+      </div>
+    );
+  }
+
+  if (desc) {
+    return (
+      <div className="line-clamp-2 max-w-xs text-xs text-zinc-600" title={desc}>
+        {desc}
+      </div>
+    );
+  }
+
+  return <span className="text-xs text-zinc-500">{geometrySummary(feature.geometry)}</span>;
 }
