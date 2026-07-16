@@ -166,7 +166,7 @@ POST   /api/v1/auth/google
 GET    /api/v1/auth/me
 POST   /api/v1/auth/role
 POST   /api/v1/auth/logout
-GET    /api/v1/features?page=1&limit=20&search=&category=&province=&bbox=minLng,minLat,maxLng,maxLat
+GET    /api/v1/features?page=1&limit=20&search=&collection=&category=&province=&bbox=minLng,minLat,maxLng,maxLat
 GET    /api/v1/features/:id
 POST   /api/v1/features
 PUT    /api/v1/features/:id
@@ -188,6 +188,7 @@ Create/update body supports `Point`, `LineString`, and `Polygon` GeoJSON geometr
 ```json
 {
   "type": "Feature",
+  "collection": "observations",
   "geometry": {
     "type": "Point",
     "coordinates": [100.5018, 13.7563]
@@ -206,6 +207,7 @@ LineString geometry example:
 ```json
 {
   "type": "Feature",
+  "collection": "observations",
   "geometry": {
     "type": "LineString",
     "coordinates": [
@@ -227,6 +229,7 @@ Polygon geometry example:
 ```json
 {
   "type": "Feature",
+  "collection": "observations",
   "geometry": {
     "type": "Polygon",
     "coordinates": [

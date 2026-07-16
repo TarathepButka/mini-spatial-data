@@ -51,7 +51,7 @@
     },
     {
       "name": "List Features with Search and Filters",
-      "request": { "method": "GET", "url": "{{baseUrl}}/features?page=1&limit=20&search=hotspot&category=nominal&province=Suphan%20Buri" }
+      "request": { "method": "GET", "url": "{{baseUrl}}/features?page=1&limit=20&search=hotspot&collection=hotspots&category=nominal&province=Suphan%20Buri" }
     },
     {
       "name": "List Features by BBox",
@@ -69,7 +69,7 @@
         "url": "{{baseUrl}}/features",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Manual Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Created from Postman\"\n  }\n}"
+          "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.5018, 13.7563]\n  },\n  \"properties\": {\n    \"name\": \"Manual Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Created from Postman\"\n  }\n}"
         }
       }
     },
@@ -81,7 +81,7 @@
         "url": "{{baseUrl}}/features",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [\n      [100.5018, 13.7563],\n      [100.61, 13.82],\n      [100.72, 13.78]\n    ]\n  },\n  \"properties\": {\n    \"name\": \"Manual route feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"LineString created from Postman\"\n  }\n}"
+          "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [\n      [100.5018, 13.7563],\n      [100.61, 13.82],\n      [100.72, 13.78]\n    ]\n  },\n  \"properties\": {\n    \"name\": \"Manual route feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"LineString created from Postman\"\n  }\n}"
         }
       }
     },
@@ -93,7 +93,7 @@
         "url": "{{baseUrl}}/features",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [100.48, 13.73],\n        [100.56, 13.73],\n        [100.56, 13.79],\n        [100.48, 13.73]\n      ]\n    ]\n  },\n  \"properties\": {\n    \"name\": \"Manual area feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Polygon created from Postman\"\n  }\n}"
+          "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [\n      [\n        [100.48, 13.73],\n        [100.56, 13.73],\n        [100.56, 13.79],\n        [100.48, 13.73]\n      ]\n    ]\n  },\n  \"properties\": {\n    \"name\": \"Manual area feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Polygon created from Postman\"\n  }\n}"
         }
       }
     },
@@ -105,7 +105,7 @@
         "url": "{{baseUrl}}/features/{{featureId}}",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"type\": \"Feature\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Updated Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Updated from Postman\"\n  }\n}"
+          "raw": "{\n  \"type\": \"Feature\",\n  \"collection\": \"observations\",\n  \"geometry\": {\n    \"type\": \"Point\",\n    \"coordinates\": [100.55, 13.76]\n  },\n  \"properties\": {\n    \"name\": \"Updated Bangkok feature\",\n    \"category\": \"manual\",\n    \"province\": \"Bangkok\",\n    \"description\": \"Updated from Postman\"\n  }\n}"
         }
       }
     },
