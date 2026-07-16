@@ -305,6 +305,10 @@ export function FeaturesDashboard() {
     setMapFocusRequestId((current) => current + 1);
   }
 
+  function selectMapFeature(feature: SpatialFeature) {
+    setSelectedFeatureId(feature.id);
+  }
+
   function invalidateFeatureQueries() {
     void queryClient.invalidateQueries({ queryKey: ["features"] });
     void queryClient.invalidateQueries({ queryKey: ["features-map"] });
@@ -473,6 +477,7 @@ export function FeaturesDashboard() {
               onMapClick={handleMapClick}
               onDraftGeometryChange={handleDraftGeometryChange}
               onBoundsChange={handleBoundsChange}
+              onSelectFeature={selectMapFeature}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

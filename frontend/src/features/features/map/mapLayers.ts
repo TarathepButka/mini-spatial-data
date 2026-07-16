@@ -14,7 +14,16 @@ export const SELECTED_POINT_LAYER_ID = "spatial-features-selected-point";
 export const SELECTED_LINE_LAYER_ID = "spatial-features-selected-line";
 export const SELECTED_POLYGON_LAYER_ID = "spatial-features-selected-polygon";
 export const SELECTED_POLYGON_OUTLINE_LAYER_ID = "spatial-features-selected-polygon-outline";
-export const FEATURE_CLICK_LAYERS = [POINT_LAYER_ID, LINE_LAYER_ID, POLYGON_FILL_LAYER_ID];
+export const FEATURE_CLICK_LAYERS = [
+  SELECTED_POINT_LAYER_ID,
+  SELECTED_LINE_LAYER_ID,
+  SELECTED_POLYGON_LAYER_ID,
+  SELECTED_POLYGON_OUTLINE_LAYER_ID,
+  POINT_LAYER_ID,
+  LINE_LAYER_ID,
+  POLYGON_FILL_LAYER_ID,
+  POLYGON_OUTLINE_LAYER_ID,
+];
 export const BOUNDS_CHANGE_DELAY_MS = MAP_BOUNDS_DEBOUNCE_MS;
 
 export const rasterStyle: StyleSpecification = {
@@ -212,6 +221,7 @@ function featureCollection(features: SpatialFeature[], collectionOptions: Collec
       ...feature,
       properties: {
         ...feature.properties,
+        id: feature.id,
         _category: featureCategory(feature),
         _color: collectionColor(featureCollectionKey(feature), collectionOptions),
       },

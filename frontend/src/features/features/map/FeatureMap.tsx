@@ -1,5 +1,5 @@
 import { MapPin, MousePointer2, Pentagon, Route, Trash2 } from "lucide-react";
-import maplibregl, { type Map } from "maplibre-gl";
+import maplibregl, { type Map, type Popup } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONStoreFeatures, TerraDraw } from "terra-draw";
 import type { BoundingBox, SpatialFeature, SpatialGeometry } from "../../../types/geojson";
@@ -35,11 +35,12 @@ type FeatureMapProps = {
   onMapClick: (coordinates: [number, number]) => void;
   onDraftGeometryChange: (geometry: SpatialGeometry | null, meta?: { finished?: boolean }) => void;
   onBoundsChange: (bbox: BoundingBox) => void;
+  onSelectFeature: (feature: SpatialFeature) => void;
   onEdit: (feature: SpatialFeature) => void;
   onDelete: (feature: SpatialFeature) => void;
 };
 
-type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange"> &
+type CallbackRefs = Pick<FeatureMapProps, "onMapClick" | "onDraftGeometryChange" | "onBoundsChange" | "onSelectFeature"> &
   FeaturePopupCallbacks & {
     canCreate: boolean;
     collectionOptions: CollectionOption[];
@@ -59,6 +60,7 @@ export function FeatureMap({
   onMapClick,
   onDraftGeometryChange,
   onBoundsChange,
+  onSelectFeature,
   onEdit,
   onDelete,
 }: FeatureMapProps) {
@@ -67,6 +69,7 @@ export function FeatureMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const drawRef = useRef<TerraDraw | null>(null);
+  const popupRef = useRef<Popup | null>(null);
   const featuresRef = useRef<SpatialFeature[]>(features);
   const moveTimerRef = useRef<number | null>(null);
   const drawModeRef = useRef<DrawMode>("select");
@@ -82,13 +85,14 @@ export function FeatureMap({
     onMapClick,
     onDraftGeometryChange,
     onBoundsChange,
+    onSelectFeature,
     onEdit,
     onDelete,
     collectionOptions,
   });
 
   featuresRef.current = features;
-  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onEdit, onDelete, collectionOptions };
+  callbacksRef.current = { canCreate, canEdit: canEditFeature, canDeleteFeature, onMapClick, onDraftGeometryChange, onBoundsChange, onSelectFeature, onEdit, onDelete, collectionOptions };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
@@ -106,17 +110,44 @@ export function FeatureMap({
     map.getCanvas().tabIndex = 0;
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
-    const handleFeatureClick = (event: maplibregl.MapLayerMouseEvent) => {
-      ignoreNextMapClickRef.current = true;
-      const rawId = event.features?.[0]?.id;
-      const featureId = rawId == null ? "" : String(rawId);
-      const feature = featuresRef.current.find((item) => item.id === featureId);
+    const handleFeatureClick = (event: maplibregl.MapMouseEvent) => {
+      const layers = FEATURE_CLICK_LAYERS.filter((layerId) => map.getLayer(layerId));
 
-      if (!feature) {
-        return;
+      if (layers.length === 0) {
+        return null;
       }
 
-      new maplibregl.Popup({ offset: 18 }).setLngLat(event.lngLat).setDOMContent(createPopup(feature, callbacksRef)).addTo(map);
+      // Add a small 5px bounding box to make clicking points/lines easier
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [event.point.x - 5, event.point.y - 5],
+        [event.point.x + 5, event.point.y + 5],
+      ];
+      const renderedFeatures = map.queryRenderedFeatures(bbox, { layers });
+      for (const renderedFeature of renderedFeatures) {
+        // MapLibre might drop string IDs, so we check properties.id as a fallback
+        const rawId = renderedFeature.id ?? renderedFeature.properties?.id;
+        const featureId = rawId == null ? "" : String(rawId);
+        const feature = featuresRef.current.find((item) => item.id === featureId);
+
+        if (feature) {
+          return feature;
+        }
+      }
+
+      return null;
+    };
+
+    const openFeaturePopup = (feature: SpatialFeature, lngLat: maplibregl.LngLat) => {
+      callbacksRef.current.onSelectFeature(feature);
+      popupRef.current?.remove();
+
+      const popup = new maplibregl.Popup({ offset: 18 }).setLngLat(lngLat).setDOMContent(createPopup(feature, callbacksRef)).addTo(map);
+      popup.on("close", () => {
+        if (popupRef.current === popup) {
+          popupRef.current = null;
+        }
+      });
+      popupRef.current = popup;
     };
 
     const setPointer = () => {
@@ -132,13 +163,14 @@ export function FeatureMap({
         return;
       }
 
-      if (ignoreNextMapClickRef.current) {
-        ignoreNextMapClickRef.current = false;
-
+      if (drawModeRef.current !== "select") {
         return;
       }
 
-      if (drawModeRef.current !== "select") {
+      const feature = handleFeatureClick(event);
+      if (feature) {
+        openFeaturePopup(feature, event.lngLat);
+
         return;
       }
 
@@ -189,7 +221,6 @@ export function FeatureMap({
       updateFeatureSource(map, featuresRef.current, collectionOptions);
       updateSelectedFilters(map, selectedFeatureId);
       FEATURE_CLICK_LAYERS.forEach((layerId) => {
-        map.on("click", layerId, handleFeatureClick);
         map.on("mouseenter", layerId, setPointer);
         map.on("mouseleave", layerId, unsetPointer);
       });
@@ -211,6 +242,8 @@ export function FeatureMap({
 
       map.getCanvas().removeEventListener("click", handleLineFinishClick, true);
       map.getCanvas().removeEventListener("dblclick", handleLineDoubleClick, true);
+      popupRef.current?.remove();
+      popupRef.current = null;
       drawRef.current?.stop();
       drawRef.current = null;
       map.remove();
@@ -466,13 +499,12 @@ function DrawButton({
       type="button"
       title={title}
       onClick={onClick}
-      className={`inline-flex h-10 w-10 items-center justify-center border-r border-zinc-200 text-sm transition last:border-r-0 ${
-        active
+      className={`inline-flex h-10 w-10 items-center justify-center border-r border-zinc-200 text-sm transition last:border-r-0 ${active
           ? "bg-zinc-950 text-white"
           : danger
             ? "bg-white text-red-600 hover:bg-red-50"
             : "bg-white text-zinc-700 hover:bg-zinc-100"
-      }`}
+        }`}
     >
       {children}
     </button>
